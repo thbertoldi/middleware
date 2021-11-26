@@ -19,6 +19,7 @@ func main() {
 	}
 	app := fiber.New()
 	app.Static("/", "./web/public")
+	// app.Get("/sys/status"
 	go mqtt.Run(&conf)
 	fmt.Println(app.Listen(":" + strconv.Itoa(conf.ServerPort)))
 }
