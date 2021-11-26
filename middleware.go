@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"strconv"
 
 	"codigos.ufsc.br/g.manoel/pi_das_2021_2/internal"
 	"codigos.ufsc.br/g.manoel/pi_das_2021_2/protocol/mqtt"
@@ -19,5 +20,5 @@ func main() {
 	app := fiber.New()
 	app.Static("/", "./web/public")
 	go mqtt.Run(&conf)
-	fmt.Println(app.Listen(":3000"))
+	fmt.Println(app.Listen(":" + strconv.Itoa(conf.ServerPort)))
 }
