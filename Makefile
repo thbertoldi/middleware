@@ -8,4 +8,4 @@ docker_build:
 	docker build . -t middleware:latest
 
 docker_run:
-	docker run middleware:latest
+	docker-compose up
