@@ -18,7 +18,8 @@ var msgPubHandler paho.MessageHandler = func(client paho.Client, msg paho.Messag
 var onSensorData paho.MessageHandler = func(client paho.Client, msg paho.Message) {
 	fmt.Printf("Received message from sensor: %s from topic: %s\n", msg.Payload(), msg.Topic())
 	var data map[string]interface{}
-	err := json.Unmarshal(msg.Payload(), &data)
+	message := strings.ReplaceAll(string(msg.Payload()), "'", "\"")
+	err := json.Unmarshal([]byte(message), &data)
 	if err != nil {
 		fmt.Println("Failed to parse")
 		return

@@ -7,5 +7,5 @@ native_build:
 docker_build: native_build
 	docker build . -t middleware:latest
 
-docker_run: native_build
+docker_run:
 	docker-compose up
