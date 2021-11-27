@@ -35,5 +35,5 @@ var connHandler paho.OnConnectHandler = func(client paho.Client) {
 }
 
 var connLostHandler paho.ConnectionLostHandler = func(client paho.Client, err error) {
-	fmt.Printf("Connect lost: %v", err)
+	fmt.Printf("Connect lost: %v\n", err)
 }

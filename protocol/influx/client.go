@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"codigos.ufsc.br/g.manoel/pi_das_2021_2/internal"
+	"codigos.ufsc.br/g.manoel/pi_das_2021_2/config"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 )
@@ -18,7 +18,7 @@ type Model struct {
 
 // Get returns a Influx Model
 func Get() Model {
-	conf, _ := internal.LoadConfig(".")
+	conf, _ := config.LoadInflux()
 	client := influxdb2.NewClient(conf.IFUrl, conf.IFToken)
 	writeAPI := client.WriteAPIBlocking(conf.IFOrg, conf.IFBucket)
 	return Model{client, writeAPI}

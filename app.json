@@ -1,0 +1,11 @@
+{
+    "mqtt": {
+        "host": "broker.hivemq.com",
+        "port": 1883,
+        "topic": ["ESP32 MF 000 envia", "ESP32 AC 000 envia", "ESP32 TF 000 envia", "ESP32 TF 001 envia", "ESP32 TF 002 envia"],
+        "id": "mqtt_iot_middleware"
+    },
+    "http": {
+        "port": 3000
+    }
+}
