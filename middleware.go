@@ -19,6 +19,14 @@ func main() {
 	}
 	app := fiber.New()
 	app.Static("/", "./web/public")
+	app.Get("/api", func(c *fiber.Ctx) error {
+		err := c.SendString("hi there")
+		return err
+	})
+	app.Get("*", func(c *fiber.Ctx) error {
+		err := c.SendFile("web/public/index.html")
+		return err
+	})
 	go mqtt.Run(&conf)
 	fmt.Println(app.Listen(":" + strconv.Itoa(conf.ServerPort)))
 }
