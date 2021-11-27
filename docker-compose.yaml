@@ -1,5 +1,17 @@
 services:
-  web:
-    build: .
-    ports:
-      - "3000:3000"
+  influxdb:
+      container_name: influx
+      image: influxdb:latest
+      ports:
+        - '8086:8086'
+      volumes:
+        - influxdb-storage:/var/lib/influxdb2
+      environment:
+        - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG}
+        - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
+        - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${TOKEN}
+        - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USER}
+        - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+        - DOCKER_INFLUXDB_INIT_MODE=setup
+volumes:
+  influxdb-storage:

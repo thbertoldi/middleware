@@ -25,4 +25,9 @@ func Run(conf *internal.Config) {
 func sub(client paho.Client, topic string) {
 	token := client.Subscribe(topic, 1, onSensorData)
 	token.Wait()
+	other := []string{"ESP32 AC 000", "ESP32 TF 000", "ESP32 TF 001", "ESP32 TF 002"}
+	for _, t := range other {
+		token := client.Subscribe(t+" envia", 1, onSensorData)
+		token.Wait()
+	}
 }

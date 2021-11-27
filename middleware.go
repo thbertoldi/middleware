@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	path := flag.String("path", "configs", "path to configuration file")
+	path := flag.String("path", ".", "path to configuration file")
 	flag.Parse()
 	conf, err := internal.LoadConfig(*path)
 	if err != nil {
@@ -19,7 +19,6 @@ func main() {
 	}
 	app := fiber.New()
 	app.Static("/", "./web/public")
-	// app.Get("/sys/status"
 	go mqtt.Run(&conf)
 	fmt.Println(app.Listen(":" + strconv.Itoa(conf.ServerPort)))
 }

@@ -1,6 +1,6 @@
 FROM golang:1.16-alpine
 WORKDIR /app
-COPY . ./
-RUN go mod download
-RUN go build -o /middleware
+COPY web/public ./web/public
+COPY .env ./
+COPY middleware ./middleware
 CMD [ "/middleware" ]

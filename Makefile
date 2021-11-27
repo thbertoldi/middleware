@@ -4,8 +4,8 @@ native_run:
 native_build:
 	go build middleware.go
 
-docker_build:
+docker_build: native_build
 	docker build . -t middleware:latest
 
-docker_run:
+docker_run: native_build
 	docker-compose up
