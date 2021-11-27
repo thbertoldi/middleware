@@ -11,8 +11,29 @@ $ sudo pacman -S go docker
 $ pip install --user docker-compose
 ```
 
+Dev tools:
+
+```sh
+$ pip install --user pre-commit
+$ pre-commit install
+```
+
+
 ## Makefile targets:
 * __native_run:__ Run middleware application on native mode.
 * __native_build:__ Build middleware application for Linux-x86.
 * __docker_run:__ Run all application containers.
 * __docker_build:__ Build middleware application on a container.
+
+## Running the project:
+
+Start InfluxDB:
+
+```sh
+$ docker-compose up
+```
+Start Golang Middleware:
+
+```sh
+$ go run .
+```
