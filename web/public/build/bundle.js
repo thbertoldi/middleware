@@ -81,14 +81,6 @@ var app = (function () {
                 result[k] = props[k];
         return result;
     }
-    function compute_rest_props(props, keys) {
-        const rest = {};
-        keys = new Set(keys);
-        for (const k in props)
-            if (!keys.has(k) && k[0] !== '$')
-                rest[k] = props[k];
-        return rest;
-    }
     function action_destroyer(action_result) {
         return action_result && is_function(action_result.destroy) ? action_result.destroy : noop;
     }
@@ -124,27 +116,6 @@ var app = (function () {
         else if (node.getAttribute(attribute) !== value)
             node.setAttribute(attribute, value);
     }
-    function set_attributes(node, attributes) {
-        // @ts-ignore
-        const descriptors = Object.getOwnPropertyDescriptors(node.__proto__);
-        for (const key in attributes) {
-            if (attributes[key] == null) {
-                node.removeAttribute(key);
-            }
-            else if (key === 'style') {
-                node.style.cssText = attributes[key];
-            }
-            else if (key === '__value') {
-                node.value = node[key] = attributes[key];
-            }
-            else if (descriptors[key] && descriptors[key].set) {
-                node[key] = attributes[key];
-            }
-            else {
-                attr(node, key, attributes[key]);
-            }
-        }
-    }
     function children(element) {
         return Array.from(element.childNodes);
     }
@@ -155,11 +126,6 @@ var app = (function () {
     }
     function set_style(node, key, value, important) {
         node.style.setProperty(key, value, important ? 'important' : '');
-    }
-    function custom_event(type, detail) {
-        const e = document.createEvent('CustomEvent');
-        e.initCustomEvent(type, false, false, detail);
-        return e;
     }
 
     let current_component;
@@ -176,20 +142,6 @@ var app = (function () {
     }
     function onDestroy(fn) {
         get_current_component().$$.on_destroy.push(fn);
-    }
-    function createEventDispatcher() {
-        const component = get_current_component();
-        return (type, detail) => {
-            const callbacks = component.$$.callbacks[type];
-            if (callbacks) {
-                // TODO are there situations where events could be dispatched
-                // in a server (non-DOM) environment?
-                const event = custom_event(type, detail);
-                callbacks.slice().forEach(fn => {
-                    fn.call(component, event);
-                });
-            }
-        };
     }
     function setContext(key, context) {
         get_current_component().$$.context.set(key, context);
@@ -690,16 +642,6 @@ var app = (function () {
     const ROOT_POINTS = 1;
 
     /**
-     * Check if `string` starts with `search`
-     * @param {string} string
-     * @param {string} search
-     * @return {boolean}
-     */
-    function startsWith(string, search) {
-      return string.substr(0, search.length) === search;
-    }
-
-    /**
      * Check if `segment` is a root segment
      * @param {string} segment
      * @return {boolean}
@@ -905,86 +847,6 @@ var app = (function () {
     }
 
     /**
-     * Add the query to the pathname if a query is given
-     * @param {string} pathname
-     * @param {string} [query]
-     * @return {string}
-     */
-    function addQuery(pathname, query) {
-      return pathname + (query ? `?${query}` : "");
-    }
-
-    /**
-     * Resolve URIs as though every path is a directory, no files. Relative URIs
-     * in the browser can feel awkward because not only can you be "in a directory",
-     * you can be "at a file", too. For example:
-     *
-     *  browserSpecResolve('foo', '/bar/') => /bar/foo
-     *  browserSpecResolve('foo', '/bar') => /foo
-     *
-     * But on the command line of a file system, it's not as complicated. You can't
-     * `cd` from a file, only directories. This way, links have to know less about
-     * their current path. To go deeper you can do this:
-     *
-     *  <Link to="deeper"/>
-     *  // instead of
-     *  <Link to=`{${props.uri}/deeper}`/>
-     *
-     * Just like `cd`, if you want to go deeper from the command line, you do this:
-     *
-     *  cd deeper
-     *  # not
-     *  cd $(pwd)/deeper
-     *
-     * By treating every path as a directory, linking to relative paths should
-     * require less contextual information and (fingers crossed) be more intuitive.
-     * @param {string} to
-     * @param {string} base
-     * @return {string}
-     */
-    function resolve(to, base) {
-      // /foo/bar, /baz/qux => /foo/bar
-      if (startsWith(to, "/")) {
-        return to;
-      }
-
-      const [toPathname, toQuery] = to.split("?");
-      const [basePathname] = base.split("?");
-      const toSegments = segmentize(toPathname);
-      const baseSegments = segmentize(basePathname);
-
-      // ?a=b, /users?b=c => /users?a=b
-      if (toSegments[0] === "") {
-        return addQuery(basePathname, toQuery);
-      }
-
-      // profile, /users/789 => /users/789/profile
-      if (!startsWith(toSegments[0], ".")) {
-        const pathname = baseSegments.concat(toSegments).join("/");
-
-        return addQuery((basePathname === "/" ? "" : "/") + pathname, toQuery);
-      }
-
-      // ./       , /users/123 => /users/123
-      // ../      , /users/123 => /users
-      // ../..    , /users/123 => /
-      // ../../one, /a/b/c/d   => /a/b/one
-      // .././one , /a/b/c/d   => /a/b/c/one
-      const allSegments = baseSegments.concat(toSegments);
-      const segments = [];
-
-      allSegments.forEach(segment => {
-        if (segment === "..") {
-          segments.pop();
-        } else if (segment !== ".") {
-          segments.push(segment);
-        }
-      });
-
-      return addQuery("/" + segments.join("/"), toQuery);
-    }
-
-    /**
      * Combines the `basepath` and the `path` into one path.
      * @param {string} basepath
      * @param {string} path
@@ -1019,7 +881,7 @@ var app = (function () {
 
     /* node_modules/svelte-routing/src/Router.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$A(ctx) {
+    function create_fragment$w(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[9].default;
     	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[8], null);
@@ -1057,7 +919,7 @@ var app = (function () {
     	};
     }
 
-    function instance$u($$self, $$props, $$invalidate) {
+    function instance$q($$self, $$props, $$invalidate) {
     	let $base;
     	let $location;
     	let $routes;
@@ -1217,7 +1079,7 @@ var app = (function () {
     class Router extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$u, create_fragment$A, safe_not_equal, { basepath: 3, url: 4 });
+    		init(this, options, instance$q, create_fragment$w, safe_not_equal, { basepath: 3, url: 4 });
     	}
     }
 
@@ -1432,7 +1294,7 @@ var app = (function () {
     	};
     }
 
-    function create_fragment$z(ctx) {
+    function create_fragment$v(ctx) {
     	let if_block_anchor;
     	let current;
     	let if_block = /*$activeRoute*/ ctx[1] !== null && /*$activeRoute*/ ctx[1].route === /*route*/ ctx[7] && create_if_block(ctx);
@@ -1487,7 +1349,7 @@ var app = (function () {
     	};
     }
 
-    function instance$t($$self, $$props, $$invalidate) {
+    function instance$p($$self, $$props, $$invalidate) {
     	let $activeRoute;
     	let $location;
     	let { $$slots: slots = {}, $$scope } = $$props;
@@ -1557,185 +1419,7 @@ var app = (function () {
     class Route extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$t, create_fragment$z, safe_not_equal, { path: 8, component: 0 });
-    	}
-    }
-
-    /* node_modules/svelte-routing/src/Link.svelte generated by Svelte v3.35.0 */
-
-    function create_fragment$y(ctx) {
-    	let a;
-    	let current;
-    	let mounted;
-    	let dispose;
-    	const default_slot_template = /*#slots*/ ctx[16].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[15], null);
-
-    	let a_levels = [
-    		{ href: /*href*/ ctx[0] },
-    		{ "aria-current": /*ariaCurrent*/ ctx[2] },
-    		/*props*/ ctx[1],
-    		/*$$restProps*/ ctx[6]
-    	];
-
-    	let a_data = {};
-
-    	for (let i = 0; i < a_levels.length; i += 1) {
-    		a_data = assign(a_data, a_levels[i]);
-    	}
-
-    	return {
-    		c() {
-    			a = element("a");
-    			if (default_slot) default_slot.c();
-    			set_attributes(a, a_data);
-    		},
-    		m(target, anchor) {
-    			insert(target, a, anchor);
-
-    			if (default_slot) {
-    				default_slot.m(a, null);
-    			}
-
-    			current = true;
-
-    			if (!mounted) {
-    				dispose = listen(a, "click", /*onClick*/ ctx[5]);
-    				mounted = true;
-    			}
-    		},
-    		p(ctx, [dirty]) {
-    			if (default_slot) {
-    				if (default_slot.p && dirty & /*$$scope*/ 32768) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[15], dirty, null, null);
-    				}
-    			}
-
-    			set_attributes(a, a_data = get_spread_update(a_levels, [
-    				(!current || dirty & /*href*/ 1) && { href: /*href*/ ctx[0] },
-    				(!current || dirty & /*ariaCurrent*/ 4) && { "aria-current": /*ariaCurrent*/ ctx[2] },
-    				dirty & /*props*/ 2 && /*props*/ ctx[1],
-    				dirty & /*$$restProps*/ 64 && /*$$restProps*/ ctx[6]
-    			]));
-    		},
-    		i(local) {
-    			if (current) return;
-    			transition_in(default_slot, local);
-    			current = true;
-    		},
-    		o(local) {
-    			transition_out(default_slot, local);
-    			current = false;
-    		},
-    		d(detaching) {
-    			if (detaching) detach(a);
-    			if (default_slot) default_slot.d(detaching);
-    			mounted = false;
-    			dispose();
-    		}
-    	};
-    }
-
-    function instance$s($$self, $$props, $$invalidate) {
-    	let ariaCurrent;
-    	const omit_props_names = ["to","replace","state","getProps"];
-    	let $$restProps = compute_rest_props($$props, omit_props_names);
-    	let $base;
-    	let $location;
-    	let { $$slots: slots = {}, $$scope } = $$props;
-    	let { to = "#" } = $$props;
-    	let { replace = false } = $$props;
-    	let { state = {} } = $$props;
-    	let { getProps = () => ({}) } = $$props;
-    	const { base } = getContext(ROUTER);
-    	component_subscribe($$self, base, value => $$invalidate(13, $base = value));
-    	const location = getContext(LOCATION);
-    	component_subscribe($$self, location, value => $$invalidate(14, $location = value));
-    	const dispatch = createEventDispatcher();
-    	let href, isPartiallyCurrent, isCurrent, props;
-
-    	function onClick(event) {
-    		dispatch("click", event);
-
-    		if (shouldNavigate(event)) {
-    			event.preventDefault();
-
-    			// Don't push another entry to the history stack when the user
-    			// clicks on a Link to the page they are currently on.
-    			const shouldReplace = $location.pathname === href || replace;
-
-    			navigate(href, { state, replace: shouldReplace });
-    		}
-    	}
-
-    	$$self.$$set = $$new_props => {
-    		$$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
-    		$$invalidate(6, $$restProps = compute_rest_props($$props, omit_props_names));
-    		if ("to" in $$new_props) $$invalidate(7, to = $$new_props.to);
-    		if ("replace" in $$new_props) $$invalidate(8, replace = $$new_props.replace);
-    		if ("state" in $$new_props) $$invalidate(9, state = $$new_props.state);
-    		if ("getProps" in $$new_props) $$invalidate(10, getProps = $$new_props.getProps);
-    		if ("$$scope" in $$new_props) $$invalidate(15, $$scope = $$new_props.$$scope);
-    	};
-
-    	$$self.$$.update = () => {
-    		if ($$self.$$.dirty & /*to, $base*/ 8320) {
-    			$$invalidate(0, href = to === "/" ? $base.uri : resolve(to, $base.uri));
-    		}
-
-    		if ($$self.$$.dirty & /*$location, href*/ 16385) {
-    			$$invalidate(11, isPartiallyCurrent = startsWith($location.pathname, href));
-    		}
-
-    		if ($$self.$$.dirty & /*href, $location*/ 16385) {
-    			$$invalidate(12, isCurrent = href === $location.pathname);
-    		}
-
-    		if ($$self.$$.dirty & /*isCurrent*/ 4096) {
-    			$$invalidate(2, ariaCurrent = isCurrent ? "page" : undefined);
-    		}
-
-    		if ($$self.$$.dirty & /*getProps, $location, href, isPartiallyCurrent, isCurrent*/ 23553) {
-    			$$invalidate(1, props = getProps({
-    				location: $location,
-    				href,
-    				isPartiallyCurrent,
-    				isCurrent
-    			}));
-    		}
-    	};
-
-    	return [
-    		href,
-    		props,
-    		ariaCurrent,
-    		base,
-    		location,
-    		onClick,
-    		$$restProps,
-    		to,
-    		replace,
-    		state,
-    		getProps,
-    		isPartiallyCurrent,
-    		isCurrent,
-    		$base,
-    		$location,
-    		$$scope,
-    		slots
-    	];
-    }
-
-    class Link extends SvelteComponent {
-    	constructor(options) {
-    		super();
-
-    		init(this, options, instance$s, create_fragment$y, safe_not_equal, {
-    			to: 7,
-    			replace: 8,
-    			state: 9,
-    			getProps: 10
-    		});
+    		init(this, options, instance$p, create_fragment$v, safe_not_equal, { path: 8, component: 0 });
     	}
     }
 
@@ -3639,7 +3323,7 @@ var app = (function () {
 
     /* src/components/Dropdowns/UserDropdown.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$x(ctx) {
+    function create_fragment$u(ctx) {
     	let div3;
     	let a0;
     	let div0;
@@ -3756,7 +3440,7 @@ var app = (function () {
     const click_handler_2$2 = e => e.preventDefault();
     const click_handler_3$1 = e => e.preventDefault();
 
-    function instance$r($$self, $$props, $$invalidate) {
+    function instance$o($$self, $$props, $$invalidate) {
     	let dropdownPopoverShow = false;
     	let btnDropdownRef;
     	let popoverDropdownRef;
@@ -3799,13 +3483,13 @@ var app = (function () {
     class UserDropdown extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$r, create_fragment$x, safe_not_equal, {});
+    		init(this, options, instance$o, create_fragment$u, safe_not_equal, {});
     	}
     }
 
     /* src/components/Navbars/AdminNavbar.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$w(ctx) {
+    function create_fragment$t(ctx) {
     	let nav;
     	let div1;
     	let a;
@@ -3881,13 +3565,13 @@ var app = (function () {
     class AdminNavbar extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, null, create_fragment$w, safe_not_equal, {});
+    		init(this, options, null, create_fragment$t, safe_not_equal, {});
     	}
     }
 
     /* src/components/Dropdowns/NotificationDropdown.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$v(ctx) {
+    function create_fragment$s(ctx) {
     	let div2;
     	let a0;
     	let t0;
@@ -3989,7 +3673,7 @@ var app = (function () {
     const click_handler_2$1 = e => e.preventDefault();
     const click_handler_3 = e => e.preventDefault();
 
-    function instance$q($$self, $$props, $$invalidate) {
+    function instance$n($$self, $$props, $$invalidate) {
     	let dropdownPopoverShow = false;
     	let btnDropdownRef;
     	let popoverDropdownRef;
@@ -4032,13 +3716,13 @@ var app = (function () {
     class NotificationDropdown extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$q, create_fragment$v, safe_not_equal, {});
+    		init(this, options, instance$n, create_fragment$s, safe_not_equal, {});
     	}
     }
 
     /* src/components/Sidebar/Sidebar.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$u(ctx) {
+    function create_fragment$r(ctx) {
     	let nav;
     	let div6;
     	let button0;
@@ -4522,7 +4206,7 @@ var app = (function () {
     	};
     }
 
-    function instance$p($$self, $$props, $$invalidate) {
+    function instance$m($$self, $$props, $$invalidate) {
     	let collapseShow = "hidden";
 
     	function toggleCollapseShow(classes) {
@@ -4543,13 +4227,13 @@ var app = (function () {
     class Sidebar extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$p, create_fragment$u, safe_not_equal, { location: 0 });
+    		init(this, options, instance$m, create_fragment$r, safe_not_equal, { location: 0 });
     	}
     }
 
     /* src/components/Cards/CardStats.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$t(ctx) {
+    function create_fragment$q(ctx) {
     	let div5;
     	let div4;
     	let div3;
@@ -4679,7 +4363,7 @@ var app = (function () {
     	};
     }
 
-    function instance$o($$self, $$props, $$invalidate) {
+    function instance$l($$self, $$props, $$invalidate) {
     	let { statSubtitle = "Traffic" } = $$props;
     	let { statTitle = "350,897" } = $$props;
     	let { statArrow = "up" } = $$props;
@@ -4716,7 +4400,7 @@ var app = (function () {
     	constructor(options) {
     		super();
 
-    		init(this, options, instance$o, create_fragment$t, safe_not_equal, {
+    		init(this, options, instance$l, create_fragment$q, safe_not_equal, {
     			statSubtitle: 0,
     			statTitle: 1,
     			statArrow: 2,
@@ -4731,7 +4415,7 @@ var app = (function () {
 
     /* src/components/Headers/HeaderStats.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$s(ctx) {
+    function create_fragment$p(ctx) {
     	let div7;
     	let div6;
     	let div5;
@@ -4873,73 +4557,60 @@ var app = (function () {
     class HeaderStats extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, null, create_fragment$s, safe_not_equal, {});
+    		init(this, options, null, create_fragment$p, safe_not_equal, {});
     	}
     }
 
     /* src/components/Footers/FooterAdmin.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$r(ctx) {
+    function create_fragment$o(ctx) {
     	let footer;
-    	let div4;
+    	let div3;
     	let hr;
     	let t0;
-    	let div3;
+    	let div2;
     	let div1;
     	let div0;
     	let t1;
     	let t2;
     	let t3;
-    	let a0;
-    	let t5;
-    	let div2;
+    	let a;
 
     	return {
     		c() {
     			footer = element("footer");
-    			div4 = element("div");
+    			div3 = element("div");
     			hr = element("hr");
     			t0 = space();
-    			div3 = element("div");
+    			div2 = element("div");
     			div1 = element("div");
     			div0 = element("div");
     			t1 = text("Copyright © ");
     			t2 = text(/*date*/ ctx[0]);
     			t3 = space();
-    			a0 = element("a");
-    			a0.textContent = "Creative Tim";
-    			t5 = space();
-    			div2 = element("div");
-
-    			div2.innerHTML = `<ul class="flex flex-wrap list-none md:justify-end justify-center"><li><a href="https://www.creative-tim.com?ref=ns-footer-admin" class="text-blueGray-600 hover:text-blueGray-800 text-sm font-semibold block py-1 px-3">Creative Tim</a></li> 
-          <li><a href="https://www.creative-tim.com/presentation?ref=ns-footer-admin" class="text-blueGray-600 hover:text-blueGray-800 text-sm font-semibold block py-1 px-3">About Us</a></li> 
-          <li><a href="http://blog.creative-tim.com?ref=ns-footer-admin" class="text-blueGray-600 hover:text-blueGray-800 text-sm font-semibold block py-1 px-3">Blog</a></li> 
-          <li><a href="https://github.com/creativetimofficial/notus-svelte/blob/main/LICENSE.md?ref=ns-footer-admin" class="text-blueGray-600 hover:text-blueGray-800 text-sm font-semibold block py-1 px-3">MIT License</a></li></ul>`;
-
+    			a = element("a");
+    			a.textContent = "PI DAS";
     			attr(hr, "class", "mb-4 border-b-1 border-blueGray-200");
-    			attr(a0, "href", "https://www.creative-tim.com?ref=ns-footer-admin");
-    			attr(a0, "class", "text-blueGray-500 hover:text-blueGray-700 text-sm font-semibold py-1");
+    			attr(a, "href", "https://www.linkedin.com/in/thiago-bertoldi");
+    			attr(a, "class", "text-blueGray-500 hover:text-blueGray-700 text-sm font-semibold py-1");
     			attr(div0, "class", "text-sm text-blueGray-500 font-semibold py-1 text-center md:text-left");
     			attr(div1, "class", "w-full md:w-4/12 px-4");
-    			attr(div2, "class", "w-full md:w-8/12 px-4");
-    			attr(div3, "class", "flex flex-wrap items-center md:justify-between justify-center");
-    			attr(div4, "class", "container mx-auto px-4");
+    			attr(div2, "class", "flex flex-wrap items-center md:justify-between justify-center");
+    			attr(div3, "class", "container mx-auto px-4");
     			attr(footer, "class", "block py-4");
     		},
     		m(target, anchor) {
     			insert(target, footer, anchor);
-    			append(footer, div4);
-    			append(div4, hr);
-    			append(div4, t0);
-    			append(div4, div3);
-    			append(div3, div1);
+    			append(footer, div3);
+    			append(div3, hr);
+    			append(div3, t0);
+    			append(div3, div2);
+    			append(div2, div1);
     			append(div1, div0);
     			append(div0, t1);
     			append(div0, t2);
     			append(div0, t3);
-    			append(div0, a0);
-    			append(div3, t5);
-    			append(div3, div2);
+    			append(div0, a);
     		},
     		p: noop,
     		i: noop,
@@ -4950,7 +4621,7 @@ var app = (function () {
     	};
     }
 
-    function instance$n($$self) {
+    function instance$k($$self) {
     	let date = new Date().getFullYear();
     	return [date];
     }
@@ -4958,7 +4629,7 @@ var app = (function () {
     class FooterAdmin extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$n, create_fragment$r, safe_not_equal, {});
+    		init(this, options, instance$k, create_fragment$o, safe_not_equal, {});
     	}
     }
 
@@ -26803,7 +26474,7 @@ var app = (function () {
 
     /* src/components/Cards/CardLineChart.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$q(ctx) {
+    function create_fragment$n(ctx) {
     	let div5;
 
     	return {
@@ -26828,7 +26499,7 @@ var app = (function () {
     	};
     }
 
-    function instance$m($$self) {
+    function instance$j($$self) {
     	onMount(async () => {
     		var config = {
     			type: "line",
@@ -26921,13 +26592,13 @@ var app = (function () {
     class CardLineChart extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$m, create_fragment$q, safe_not_equal, {});
+    		init(this, options, instance$j, create_fragment$n, safe_not_equal, {});
     	}
     }
 
     /* src/components/Cards/CardBarChart.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$p(ctx) {
+    function create_fragment$m(ctx) {
     	let div5;
 
     	return {
@@ -26952,7 +26623,7 @@ var app = (function () {
     	};
     }
 
-    function instance$l($$self) {
+    function instance$i($$self) {
     	onMount(async () => {
     		let config = {
     			type: "bar",
@@ -27032,13 +26703,13 @@ var app = (function () {
     class CardBarChart extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$l, create_fragment$p, safe_not_equal, {});
+    		init(this, options, instance$i, create_fragment$m, safe_not_equal, {});
     	}
     }
 
     /* src/components/Cards/CardPageVisits.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$o(ctx) {
+    function create_fragment$l(ctx) {
     	let div5;
 
     	return {
@@ -27094,13 +26765,13 @@ var app = (function () {
     class CardPageVisits extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, null, create_fragment$o, safe_not_equal, {});
+    		init(this, options, null, create_fragment$l, safe_not_equal, {});
     	}
     }
 
     /* src/components/Cards/CardSocialTraffic.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$n(ctx) {
+    function create_fragment$k(ctx) {
     	let div25;
 
     	return {
@@ -27150,13 +26821,13 @@ var app = (function () {
     class CardSocialTraffic extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, null, create_fragment$n, safe_not_equal, {});
+    		init(this, options, null, create_fragment$k, safe_not_equal, {});
     	}
     }
 
-    /* src/views/admin/Dashboard.svelte generated by Svelte v3.35.0 */
+    /* src/views/Dashboard.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$m(ctx) {
+    function create_fragment$j(ctx) {
     	let div6;
     	let div2;
     	let div0;
@@ -27243,7 +26914,7 @@ var app = (function () {
     	};
     }
 
-    function instance$k($$self, $$props, $$invalidate) {
+    function instance$h($$self, $$props, $$invalidate) {
     	let { location } = $$props;
 
     	$$self.$$set = $$props => {
@@ -27256,13 +26927,13 @@ var app = (function () {
     class Dashboard extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$k, create_fragment$m, safe_not_equal, { location: 0 });
+    		init(this, options, instance$h, create_fragment$j, safe_not_equal, { location: 0 });
     	}
     }
 
     /* src/components/Cards/CardSettings.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$l(ctx) {
+    function create_fragment$i(ctx) {
     	let div24;
 
     	return {
@@ -27317,13 +26988,13 @@ var app = (function () {
     class CardSettings extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, null, create_fragment$l, safe_not_equal, {});
+    		init(this, options, null, create_fragment$i, safe_not_equal, {});
     	}
     }
 
     /* src/components/Cards/CardProfile.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$k(ctx) {
+    function create_fragment$h(ctx) {
     	let div16;
     	let div15;
     	let div7;
@@ -27441,13 +27112,13 @@ var app = (function () {
     class CardProfile extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, null, create_fragment$k, safe_not_equal, {});
+    		init(this, options, null, create_fragment$h, safe_not_equal, {});
     	}
     }
 
-    /* src/views/admin/Settings.svelte generated by Svelte v3.35.0 */
+    /* src/views/Settings.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$j(ctx) {
+    function create_fragment$g(ctx) {
     	let div2;
     	let div0;
     	let cardsettings;
@@ -27499,7 +27170,7 @@ var app = (function () {
     	};
     }
 
-    function instance$j($$self, $$props, $$invalidate) {
+    function instance$g($$self, $$props, $$invalidate) {
     	let { location } = $$props;
 
     	$$self.$$set = $$props => {
@@ -27512,13 +27183,13 @@ var app = (function () {
     class Settings extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$j, create_fragment$j, safe_not_equal, { location: 0 });
+    		init(this, options, instance$g, create_fragment$g, safe_not_equal, { location: 0 });
     	}
     }
 
     /* src/components/Dropdowns/TableDropdown.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$i(ctx) {
+    function create_fragment$f(ctx) {
     	let div1;
     	let a0;
     	let t0;
@@ -27602,7 +27273,7 @@ var app = (function () {
     const click_handler_1 = e => e.preventDefault();
     const click_handler_2 = e => e.preventDefault();
 
-    function instance$i($$self, $$props, $$invalidate) {
+    function instance$f($$self, $$props, $$invalidate) {
     	let dropdownPopoverShow = false;
     	let btnDropdownRef;
     	let popoverDropdownRef;
@@ -27645,13 +27316,13 @@ var app = (function () {
     class TableDropdown extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$i, create_fragment$i, safe_not_equal, {});
+    		init(this, options, instance$f, create_fragment$f, safe_not_equal, {});
     	}
     }
 
     /* src/components/Cards/CardTable.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$h(ctx) {
+    function create_fragment$e(ctx) {
     	let div29;
     	let div2;
     	let div1;
@@ -28504,7 +28175,7 @@ var app = (function () {
     const team3$1 = "../assets/img/team-3-800x800.jpg";
     const team4$1 = "../assets/img/team-4-470x470.png";
 
-    function instance$h($$self, $$props, $$invalidate) {
+    function instance$e($$self, $$props, $$invalidate) {
     	let { color = "light" } = $$props;
 
     	$$self.$$set = $$props => {
@@ -28517,13 +28188,13 @@ var app = (function () {
     class CardTable extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$h, create_fragment$h, safe_not_equal, { color: 0 });
+    		init(this, options, instance$e, create_fragment$e, safe_not_equal, { color: 0 });
     	}
     }
 
-    /* src/views/admin/Tables.svelte generated by Svelte v3.35.0 */
+    /* src/views/Devices.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$g(ctx) {
+    function create_fragment$d(ctx) {
     	let div2;
     	let div0;
     	let cardtable0;
@@ -28575,7 +28246,78 @@ var app = (function () {
     	};
     }
 
-    function instance$g($$self, $$props, $$invalidate) {
+    function instance$d($$self, $$props, $$invalidate) {
+    	let { location } = $$props;
+
+    	$$self.$$set = $$props => {
+    		if ("location" in $$props) $$invalidate(0, location = $$props.location);
+    	};
+
+    	return [location];
+    }
+
+    class Devices extends SvelteComponent {
+    	constructor(options) {
+    		super();
+    		init(this, options, instance$d, create_fragment$d, safe_not_equal, { location: 0 });
+    	}
+    }
+
+    /* src/views/Tables.svelte generated by Svelte v3.35.0 */
+
+    function create_fragment$c(ctx) {
+    	let div2;
+    	let div0;
+    	let cardtable0;
+    	let t;
+    	let div1;
+    	let cardtable1;
+    	let current;
+    	cardtable0 = new CardTable({});
+    	cardtable1 = new CardTable({ props: { color: "dark" } });
+
+    	return {
+    		c() {
+    			div2 = element("div");
+    			div0 = element("div");
+    			create_component(cardtable0.$$.fragment);
+    			t = space();
+    			div1 = element("div");
+    			create_component(cardtable1.$$.fragment);
+    			attr(div0, "class", "w-full mb-12 px-4");
+    			attr(div1, "class", "w-full mb-12 px-4");
+    			attr(div2, "class", "flex flex-wrap mt-4");
+    		},
+    		m(target, anchor) {
+    			insert(target, div2, anchor);
+    			append(div2, div0);
+    			mount_component(cardtable0, div0, null);
+    			append(div2, t);
+    			append(div2, div1);
+    			mount_component(cardtable1, div1, null);
+    			current = true;
+    		},
+    		p: noop,
+    		i(local) {
+    			if (current) return;
+    			transition_in(cardtable0.$$.fragment, local);
+    			transition_in(cardtable1.$$.fragment, local);
+    			current = true;
+    		},
+    		o(local) {
+    			transition_out(cardtable0.$$.fragment, local);
+    			transition_out(cardtable1.$$.fragment, local);
+    			current = false;
+    		},
+    		d(detaching) {
+    			if (detaching) detach(div2);
+    			destroy_component(cardtable0);
+    			destroy_component(cardtable1);
+    		}
+    	};
+    }
+
+    function instance$c($$self, $$props, $$invalidate) {
     	let { location } = $$props;
 
     	$$self.$$set = $$props => {
@@ -28588,177 +28330,7 @@ var app = (function () {
     class Tables extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$g, create_fragment$g, safe_not_equal, { location: 0 });
-    	}
-    }
-
-    /* src/components/Maps/MapExample.svelte generated by Svelte v3.35.0 */
-
-    function create_fragment$f(ctx) {
-    	let div;
-
-    	return {
-    		c() {
-    			div = element("div");
-    			attr(div, "id", "map-canvas");
-    			attr(div, "class", "relative w-full rounded h-600-px");
-    			attr(div, "data-lat", "40.748817");
-    			attr(div, "data-lng", "-73.985428");
-    		},
-    		m(target, anchor) {
-    			insert(target, div, anchor);
-    		},
-    		p: noop,
-    		i: noop,
-    		o: noop,
-    		d(detaching) {
-    			if (detaching) detach(div);
-    		}
-    	};
-    }
-
-    function instance$f($$self) {
-    	onMount(async () => {
-    		let google = window.google;
-    		let map = document.getElementById("map-canvas");
-    		let lat = map.getAttribute("data-lat");
-    		let lng = map.getAttribute("data-lng");
-    		const myLatlng = new google.maps.LatLng(lat, lng);
-
-    		const mapOptions = {
-    			zoom: 12,
-    			scrollwheel: false,
-    			center: myLatlng,
-    			mapTypeId: google.maps.MapTypeId.ROADMAP,
-    			styles: [
-    				{
-    					featureType: "administrative",
-    					elementType: "labels.text.fill",
-    					stylers: [{ color: "#444444" }]
-    				},
-    				{
-    					featureType: "landscape",
-    					elementType: "all",
-    					stylers: [{ color: "#f2f2f2" }]
-    				},
-    				{
-    					featureType: "poi",
-    					elementType: "all",
-    					stylers: [{ visibility: "off" }]
-    				},
-    				{
-    					featureType: "road",
-    					elementType: "all",
-    					stylers: [{ saturation: -100 }, { lightness: 45 }]
-    				},
-    				{
-    					featureType: "road.highway",
-    					elementType: "all",
-    					stylers: [{ visibility: "simplified" }]
-    				},
-    				{
-    					featureType: "road.arterial",
-    					elementType: "labels.icon",
-    					stylers: [{ visibility: "off" }]
-    				},
-    				{
-    					featureType: "transit",
-    					elementType: "all",
-    					stylers: [{ visibility: "off" }]
-    				},
-    				{
-    					featureType: "water",
-    					elementType: "all",
-    					stylers: [{ color: "#ed8936" }, { visibility: "on" }]
-    				}
-    			]
-    		};
-
-    		map = new google.maps.Map(map, mapOptions);
-
-    		const marker = new google.maps.Marker({
-    				position: myLatlng,
-    				map,
-    				animation: google.maps.Animation.DROP,
-    				title: "Hello World!"
-    			});
-
-    		const contentString = "<div class=\"info-window-content\"><h2>Notus Svelte</h2>" + "<p>A beautiful UI Kit and Admin for Tailwind CSS. It is Free and Open Source.</p></div>";
-    		const infowindow = new google.maps.InfoWindow({ content: contentString });
-
-    		google.maps.event.addListener(marker, "click", function () {
-    			infowindow.open(map, marker);
-    		});
-    	});
-
-    	return [];
-    }
-
-    class MapExample extends SvelteComponent {
-    	constructor(options) {
-    		super();
-    		init(this, options, instance$f, create_fragment$f, safe_not_equal, {});
-    	}
-    }
-
-    /* src/views/admin/Maps.svelte generated by Svelte v3.35.0 */
-
-    function create_fragment$e(ctx) {
-    	let div2;
-    	let div1;
-    	let div0;
-    	let mapexample;
-    	let current;
-    	mapexample = new MapExample({});
-
-    	return {
-    		c() {
-    			div2 = element("div");
-    			div1 = element("div");
-    			div0 = element("div");
-    			create_component(mapexample.$$.fragment);
-    			attr(div0, "class", "relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded");
-    			attr(div1, "class", "w-full px-4");
-    			attr(div2, "class", "flex flex-wrap");
-    		},
-    		m(target, anchor) {
-    			insert(target, div2, anchor);
-    			append(div2, div1);
-    			append(div1, div0);
-    			mount_component(mapexample, div0, null);
-    			current = true;
-    		},
-    		p: noop,
-    		i(local) {
-    			if (current) return;
-    			transition_in(mapexample.$$.fragment, local);
-    			current = true;
-    		},
-    		o(local) {
-    			transition_out(mapexample.$$.fragment, local);
-    			current = false;
-    		},
-    		d(detaching) {
-    			if (detaching) detach(div2);
-    			destroy_component(mapexample);
-    		}
-    	};
-    }
-
-    function instance$e($$self, $$props, $$invalidate) {
-    	let { location } = $$props;
-
-    	$$self.$$set = $$props => {
-    		if ("location" in $$props) $$invalidate(0, location = $$props.location);
-    	};
-
-    	return [location];
-    }
-
-    class Maps extends SvelteComponent {
-    	constructor(options) {
-    		super();
-    		init(this, options, instance$e, create_fragment$e, safe_not_equal, { location: 0 });
+    		init(this, options, instance$c, create_fragment$c, safe_not_equal, { location: 0 });
     	}
     }
 
@@ -28783,10 +28355,12 @@ var app = (function () {
     		});
 
     	route2 = new Route({
-    			props: { path: "tables", component: Tables }
+    			props: { path: "devices", component: Devices }
     		});
 
-    	route3 = new Route({ props: { path: "maps", component: Maps } });
+    	route3 = new Route({
+    			props: { path: "tables", component: Tables }
+    		});
 
     	return {
     		c() {
@@ -28836,7 +28410,7 @@ var app = (function () {
     	};
     }
 
-    function create_fragment$d(ctx) {
+    function create_fragment$b(ctx) {
     	let div2;
     	let sidebar;
     	let t0;
@@ -28936,7 +28510,7 @@ var app = (function () {
     	};
     }
 
-    function instance$d($$self, $$props, $$invalidate) {
+    function instance$b($$self, $$props, $$invalidate) {
     	let { location } = $$props;
     	let { admin = "" } = $$props;
 
@@ -28951,13 +28525,13 @@ var app = (function () {
     class Admin extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$d, create_fragment$d, safe_not_equal, { location: 0, admin: 1 });
+    		init(this, options, instance$b, create_fragment$b, safe_not_equal, { location: 0, admin: 1 });
     	}
     }
 
     /* src/components/Dropdowns/PagesDropdown.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$c(ctx) {
+    function create_fragment$a(ctx) {
     	let div3;
     	let a0;
     	let t1;
@@ -29125,7 +28699,7 @@ var app = (function () {
     	};
     }
 
-    function instance$c($$self, $$props, $$invalidate) {
+    function instance$a($$self, $$props, $$invalidate) {
     	let dropdownPopoverShow = false;
     	let btnDropdownRef;
     	let popoverDropdownRef;
@@ -29168,13 +28742,13 @@ var app = (function () {
     class PagesDropdown extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$c, create_fragment$c, safe_not_equal, {});
+    		init(this, options, instance$a, create_fragment$a, safe_not_equal, {});
     	}
     }
 
     /* src/components/Navbars/AuthNavbar.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$b(ctx) {
+    function create_fragment$9(ctx) {
     	let nav;
     	let div2;
     	let div0;
@@ -29317,7 +28891,7 @@ var app = (function () {
     	};
     }
 
-    function instance$b($$self, $$props, $$invalidate) {
+    function instance$9($$self, $$props, $$invalidate) {
     	let navbarOpen = false;
 
     	function setNavbarOpen() {
@@ -29330,13 +28904,13 @@ var app = (function () {
     class AuthNavbar extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$b, create_fragment$b, safe_not_equal, {});
+    		init(this, options, instance$9, create_fragment$9, safe_not_equal, {});
     	}
     }
 
     /* src/components/Footers/FooterSmall.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$a(ctx) {
+    function create_fragment$8(ctx) {
     	let footer;
     	let div4;
     	let hr;
@@ -29417,7 +28991,7 @@ var app = (function () {
     	};
     }
 
-    function instance$a($$self, $$props, $$invalidate) {
+    function instance$8($$self, $$props, $$invalidate) {
     	let date = new Date().getFullYear();
     	let { absolute = false } = $$props;
 
@@ -29431,13 +29005,13 @@ var app = (function () {
     class FooterSmall extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$a, create_fragment$a, safe_not_equal, { absolute: 0 });
+    		init(this, options, instance$8, create_fragment$8, safe_not_equal, { absolute: 0 });
     	}
     }
 
     /* src/views/auth/Login.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$9(ctx) {
+    function create_fragment$7(ctx) {
     	let div15;
     	let div14;
     	let div13;
@@ -29591,7 +29165,7 @@ var app = (function () {
     const google$1 = "../assets/img/google.svg";
     const click_handler$2 = e => e.preventDefault();
 
-    function instance$9($$self, $$props, $$invalidate) {
+    function instance$7($$self, $$props, $$invalidate) {
     	let { location } = $$props;
 
     	$$self.$$set = $$props => {
@@ -29604,13 +29178,13 @@ var app = (function () {
     class Login extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$9, create_fragment$9, safe_not_equal, { location: 0 });
+    		init(this, options, instance$7, create_fragment$7, safe_not_equal, { location: 0 });
     	}
     }
 
     /* src/views/auth/Register.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$8(ctx) {
+    function create_fragment$6(ctx) {
     	let div13;
     	let div12;
     	let div11;
@@ -29799,7 +29373,7 @@ var app = (function () {
     const google = "../assets/img/google.svg";
     const click_handler$1 = e => e.preventDefault();
 
-    function instance$8($$self, $$props, $$invalidate) {
+    function instance$6($$self, $$props, $$invalidate) {
     	let { location } = $$props;
 
     	$$self.$$set = $$props => {
@@ -29812,7 +29386,7 @@ var app = (function () {
     class Register extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$8, create_fragment$8, safe_not_equal, { location: 0 });
+    		init(this, options, instance$6, create_fragment$6, safe_not_equal, { location: 0 });
     	}
     }
 
@@ -29864,7 +29438,7 @@ var app = (function () {
     	};
     }
 
-    function create_fragment$7(ctx) {
+    function create_fragment$5(ctx) {
     	let div1;
     	let authnavbar;
     	let t0;
@@ -29950,7 +29524,7 @@ var app = (function () {
 
     const registerBg2 = "../assets/img/register_bg_2.png";
 
-    function instance$7($$self, $$props, $$invalidate) {
+    function instance$5($$self, $$props, $$invalidate) {
     	let { location } = $$props;
     	let { auth = "" } = $$props;
 
@@ -29965,392 +29539,208 @@ var app = (function () {
     class Auth extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$7, create_fragment$7, safe_not_equal, { location: 0, auth: 1 });
+    		init(this, options, instance$5, create_fragment$5, safe_not_equal, { location: 0, auth: 1 });
     	}
     }
 
-    /* src/components/Dropdowns/IndexDropdown.svelte generated by Svelte v3.35.0 */
+    /* src/views/Index.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$6(ctx) {
-    	let div3;
-    	let a0;
+    function create_default_slot$1(ctx) {
+    	let route0;
+    	let t0;
+    	let route1;
     	let t1;
-    	let div2;
-    	let span0;
-    	let t3;
-    	let a1;
-    	let t5;
-    	let a2;
-    	let t7;
-    	let a3;
-    	let t9;
-    	let a4;
-    	let t11;
-    	let div0;
-    	let t12;
-    	let span1;
-    	let t14;
-    	let a5;
-    	let t16;
-    	let a6;
-    	let t18;
-    	let div1;
-    	let t19;
-    	let span2;
-    	let t21;
-    	let a7;
-    	let t23;
-    	let a8;
-    	let div2_class_value;
-    	let mounted;
-    	let dispose;
-
-    	return {
-    		c() {
-    			div3 = element("div");
-    			a0 = element("a");
-    			a0.textContent = "Demo Pages";
-    			t1 = space();
-    			div2 = element("div");
-    			span0 = element("span");
-    			span0.textContent = "Admin Layout";
-    			t3 = space();
-    			a1 = element("a");
-    			a1.textContent = "Dashboard";
-    			t5 = space();
-    			a2 = element("a");
-    			a2.textContent = "Settings";
-    			t7 = space();
-    			a3 = element("a");
-    			a3.textContent = "Tables";
-    			t9 = space();
-    			a4 = element("a");
-    			a4.textContent = "Maps";
-    			t11 = space();
-    			div0 = element("div");
-    			t12 = space();
-    			span1 = element("span");
-    			span1.textContent = "Auth Layout";
-    			t14 = space();
-    			a5 = element("a");
-    			a5.textContent = "Login";
-    			t16 = space();
-    			a6 = element("a");
-    			a6.textContent = "Register";
-    			t18 = space();
-    			div1 = element("div");
-    			t19 = space();
-    			span2 = element("span");
-    			span2.textContent = "No Layout";
-    			t21 = space();
-    			a7 = element("a");
-    			a7.textContent = "Landing";
-    			t23 = space();
-    			a8 = element("a");
-    			a8.textContent = "Profile";
-    			attr(a0, "class", "hover:text-blueGray-500 text-blueGray-700 px-3 py-2 flex items-center text-xs uppercase font-bold");
-    			attr(a0, "href", "#pablo");
-    			attr(span0, "class", "text-sm pt-2 pb-0 px-4 font-bold block w-full whitespace-nowrap bg-transparent text-blueGray-400");
-    			attr(a1, "href", "/admin/dashboard");
-    			attr(a1, "class", "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-blueGray-700");
-    			attr(a2, "href", "/admin/settings");
-    			attr(a2, "class", "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-blueGray-700");
-    			attr(a3, "href", "/admin/tables");
-    			attr(a3, "class", "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-blueGray-700");
-    			attr(a4, "href", "/admin/maps");
-    			attr(a4, "class", "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-blueGray-700");
-    			attr(div0, "class", "h-0 mx-4 my-2 border border-solid border-blueGray-100");
-    			attr(span1, "class", "text-sm pt-2 pb-0 px-4 font-bold block w-full whitespace-nowrap bg-transparent text-blueGray-400");
-    			attr(a5, "href", "/auth/login");
-    			attr(a5, "class", "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-blueGray-700");
-    			attr(a6, "href", "/auth/register");
-    			attr(a6, "class", "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-blueGray-700");
-    			attr(div1, "class", "h-0 mx-4 my-2 border border-solid border-blueGray-100");
-    			attr(span2, "class", "text-sm pt-2 pb-0 px-4 font-bold block w-full whitespace-nowrap bg-transparent text-blueGray-400");
-    			attr(a7, "href", "/landing");
-    			attr(a7, "class", "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-blueGray-700");
-    			attr(a8, "href", "/profile");
-    			attr(a8, "class", "text-sm py-2 px-4 font-normal block w-full whitespace-nowrap bg-transparent text-blueGray-700");
-    			attr(div2, "class", div2_class_value = "bg-white text-base z-50 float-left py-2 list-none text-left rounded shadow-lg min-w-48 " + (/*dropdownPopoverShow*/ ctx[0] ? "block" : "hidden"));
-    		},
-    		m(target, anchor) {
-    			insert(target, div3, anchor);
-    			append(div3, a0);
-    			/*a0_binding*/ ctx[4](a0);
-    			append(div3, t1);
-    			append(div3, div2);
-    			append(div2, span0);
-    			append(div2, t3);
-    			append(div2, a1);
-    			append(div2, t5);
-    			append(div2, a2);
-    			append(div2, t7);
-    			append(div2, a3);
-    			append(div2, t9);
-    			append(div2, a4);
-    			append(div2, t11);
-    			append(div2, div0);
-    			append(div2, t12);
-    			append(div2, span1);
-    			append(div2, t14);
-    			append(div2, a5);
-    			append(div2, t16);
-    			append(div2, a6);
-    			append(div2, t18);
-    			append(div2, div1);
-    			append(div2, t19);
-    			append(div2, span2);
-    			append(div2, t21);
-    			append(div2, a7);
-    			append(div2, t23);
-    			append(div2, a8);
-    			/*div2_binding*/ ctx[5](div2);
-
-    			if (!mounted) {
-    				dispose = [
-    					listen(a0, "click", /*toggleDropdown*/ ctx[3]),
-    					action_destroyer(link.call(null, a1)),
-    					action_destroyer(link.call(null, a2)),
-    					action_destroyer(link.call(null, a3)),
-    					action_destroyer(link.call(null, a4)),
-    					action_destroyer(link.call(null, a5)),
-    					action_destroyer(link.call(null, a6)),
-    					action_destroyer(link.call(null, a7)),
-    					action_destroyer(link.call(null, a8))
-    				];
-
-    				mounted = true;
-    			}
-    		},
-    		p(ctx, [dirty]) {
-    			if (dirty & /*dropdownPopoverShow*/ 1 && div2_class_value !== (div2_class_value = "bg-white text-base z-50 float-left py-2 list-none text-left rounded shadow-lg min-w-48 " + (/*dropdownPopoverShow*/ ctx[0] ? "block" : "hidden"))) {
-    				attr(div2, "class", div2_class_value);
-    			}
-    		},
-    		i: noop,
-    		o: noop,
-    		d(detaching) {
-    			if (detaching) detach(div3);
-    			/*a0_binding*/ ctx[4](null);
-    			/*div2_binding*/ ctx[5](null);
-    			mounted = false;
-    			run_all(dispose);
-    		}
-    	};
-    }
-
-    function instance$6($$self, $$props, $$invalidate) {
-    	let dropdownPopoverShow = false;
-    	let btnDropdownRef;
-    	let popoverDropdownRef;
-
-    	const toggleDropdown = event => {
-    		event.preventDefault();
-
-    		if (dropdownPopoverShow) {
-    			$$invalidate(0, dropdownPopoverShow = false);
-    		} else {
-    			$$invalidate(0, dropdownPopoverShow = true);
-    			createPopper(btnDropdownRef, popoverDropdownRef, { placement: "bottom-start" });
-    		}
-    	};
-
-    	function a0_binding($$value) {
-    		binding_callbacks[$$value ? "unshift" : "push"](() => {
-    			btnDropdownRef = $$value;
-    			$$invalidate(1, btnDropdownRef);
-    		});
-    	}
-
-    	function div2_binding($$value) {
-    		binding_callbacks[$$value ? "unshift" : "push"](() => {
-    			popoverDropdownRef = $$value;
-    			$$invalidate(2, popoverDropdownRef);
-    		});
-    	}
-
-    	return [
-    		dropdownPopoverShow,
-    		btnDropdownRef,
-    		popoverDropdownRef,
-    		toggleDropdown,
-    		a0_binding,
-    		div2_binding
-    	];
-    }
-
-    class IndexDropdown extends SvelteComponent {
-    	constructor(options) {
-    		super();
-    		init(this, options, instance$6, create_fragment$6, safe_not_equal, {});
-    	}
-    }
-
-    /* src/components/Navbars/IndexNavbar.svelte generated by Svelte v3.35.0 */
-
-    function create_fragment$5(ctx) {
-    	let nav;
-    	let div2;
-    	let div0;
-    	let a0;
-    	let t1;
-    	let button0;
+    	let route2;
     	let t2;
-    	let div1;
-    	let ul0;
-    	let t4;
-    	let ul1;
-    	let li1;
-    	let indexdropdown;
-    	let t5;
-    	let li2;
-    	let t8;
-    	let li3;
-    	let t11;
-    	let li4;
-    	let t14;
-    	let li5;
-    	let div1_class_value;
+    	let route3;
     	let current;
-    	let mounted;
-    	let dispose;
-    	indexdropdown = new IndexDropdown({});
+
+    	route0 = new Route({
+    			props: { path: "dashboard", component: Dashboard }
+    		});
+
+    	route1 = new Route({
+    			props: { path: "settings", component: Settings }
+    		});
+
+    	route2 = new Route({
+    			props: { path: "devices", component: Devices }
+    		});
+
+    	route3 = new Route({
+    			props: { path: "tables", component: Tables }
+    		});
 
     	return {
     		c() {
-    			nav = element("nav");
-    			div2 = element("div");
-    			div0 = element("div");
-    			a0 = element("a");
-    			a0.textContent = "Notus Svelte";
+    			create_component(route0.$$.fragment);
+    			t0 = space();
+    			create_component(route1.$$.fragment);
     			t1 = space();
-    			button0 = element("button");
-    			button0.innerHTML = `<i class="fas fa-bars"></i>`;
+    			create_component(route2.$$.fragment);
     			t2 = space();
-    			div1 = element("div");
-    			ul0 = element("ul");
-
-    			ul0.innerHTML = `<li class="flex items-center"><a class="hover:text-blueGray-500 text-blueGray-700 px-3 py-2 flex items-center text-xs uppercase font-bold" href="https://www.creative-tim.com/learning-lab/tailwind/svelte/overview/notus?ref=ns-index-navbar"><i class="text-blueGray-400 far fa-file-alt text-lg leading-lg mr-2"></i>
-            Docs</a></li>`;
-
-    			t4 = space();
-    			ul1 = element("ul");
-    			li1 = element("li");
-    			create_component(indexdropdown.$$.fragment);
-    			t5 = space();
-    			li2 = element("li");
-
-    			li2.innerHTML = `<a class="hover:text-blueGray-500 text-blueGray-700 px-3 py-2 flex items-center text-xs uppercase font-bold" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fdemos.creative-tim.com%2Fnotus-svelte%2F%23%2F" target="_blank"><i class="text-blueGray-400 fab fa-facebook text-lg leading-lg"></i> 
-            <span class="lg:hidden inline-block ml-2">Share</span></a>`;
-
-    			t8 = space();
-    			li3 = element("li");
-
-    			li3.innerHTML = `<a class="hover:text-blueGray-500 text-blueGray-700 px-3 py-2 flex items-center text-xs uppercase font-bold" href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fdemos.creative-tim.com%2Fnotus-svelte%2F&amp;text=Start%20your%20development%20with%20a%20Free%20Tailwind%20CSS%20and%20Svelte%20UI%20Kit%20and%20Admin.%20Let%20Notus%20Svelte%20amaze%20you%20with%20its%20cool%20features%20and%20build%20tools%20and%20get%20your%20project%20to%20a%20whole%20new%20level." target="_blank"><i class="text-blueGray-400 fab fa-twitter text-lg leading-lg"></i> 
-            <span class="lg:hidden inline-block ml-2">Tweet</span></a>`;
-
-    			t11 = space();
-    			li4 = element("li");
-
-    			li4.innerHTML = `<a class="hover:text-blueGray-500 text-blueGray-700 px-3 py-2 flex items-center text-xs uppercase font-bold" href="https://github.com/creativetimofficial/notus-svelte?ref=ns-index-navbar" target="_blank"><i class="text-blueGray-400 fab fa-github text-lg leading-lg"></i> 
-            <span class="lg:hidden inline-block ml-2">Star</span></a>`;
-
-    			t14 = space();
-    			li5 = element("li");
-    			li5.innerHTML = `<button class="bg-red-400 text-white active:bg-red-500 text-xs font-bold uppercase px-4 py-2 rounded shadow hover:shadow-lg outline-none focus:outline-none lg:mr-1 lg:mb-0 ml-3 mb-3 ease-linear transition-all duration-150" type="button"><i class="fas fa-arrow-alt-circle-down"></i> Download</button>`;
-    			attr(a0, "class", "text-blueGray-700 text-sm font-bold leading-relaxed inline-block mr-4 py-2 whitespace-nowrap uppercase");
-    			attr(a0, "href", "/");
-    			attr(button0, "class", "cursor-pointer text-xl leading-none px-3 py-1 border border-solid border-transparent rounded bg-transparent block lg:hidden outline-none focus:outline-none");
-    			attr(button0, "type", "button");
-    			attr(div0, "class", "w-full relative flex justify-between lg:w-auto lg:static lg:block lg:justify-start");
-    			attr(ul0, "class", "flex flex-col lg:flex-row list-none mr-auto");
-    			attr(li1, "class", "flex items-center");
-    			attr(li2, "class", "flex items-center");
-    			attr(li3, "class", "flex items-center");
-    			attr(li4, "class", "flex items-center");
-    			attr(li5, "class", "flex items-center");
-    			attr(ul1, "class", "flex flex-col lg:flex-row list-none lg:ml-auto");
-    			attr(div1, "class", div1_class_value = "lg:flex flex-grow items-center " + (/*navbarOpen*/ ctx[0] ? "block" : "hidden"));
-    			attr(div1, "id", "example-navbar-warning");
-    			attr(div2, "class", "container px-4 mx-auto flex flex-wrap items-center justify-between");
-    			attr(nav, "class", "top-0 fixed z-50 w-full flex flex-wrap items-center justify-between px-2 py-3 navbar-expand-lg bg-white shadow");
+    			create_component(route3.$$.fragment);
     		},
     		m(target, anchor) {
-    			insert(target, nav, anchor);
-    			append(nav, div2);
-    			append(div2, div0);
-    			append(div0, a0);
-    			append(div0, t1);
-    			append(div0, button0);
-    			append(div2, t2);
-    			append(div2, div1);
-    			append(div1, ul0);
-    			append(div1, t4);
-    			append(div1, ul1);
-    			append(ul1, li1);
-    			mount_component(indexdropdown, li1, null);
-    			append(ul1, t5);
-    			append(ul1, li2);
-    			append(ul1, t8);
-    			append(ul1, li3);
-    			append(ul1, t11);
-    			append(ul1, li4);
-    			append(ul1, t14);
-    			append(ul1, li5);
+    			mount_component(route0, target, anchor);
+    			insert(target, t0, anchor);
+    			mount_component(route1, target, anchor);
+    			insert(target, t1, anchor);
+    			mount_component(route2, target, anchor);
+    			insert(target, t2, anchor);
+    			mount_component(route3, target, anchor);
     			current = true;
-
-    			if (!mounted) {
-    				dispose = [
-    					action_destroyer(link.call(null, a0)),
-    					listen(button0, "click", /*setNavbarOpen*/ ctx[1])
-    				];
-
-    				mounted = true;
-    			}
     		},
-    		p(ctx, [dirty]) {
-    			if (!current || dirty & /*navbarOpen*/ 1 && div1_class_value !== (div1_class_value = "lg:flex flex-grow items-center " + (/*navbarOpen*/ ctx[0] ? "block" : "hidden"))) {
-    				attr(div1, "class", div1_class_value);
-    			}
-    		},
+    		p: noop,
     		i(local) {
     			if (current) return;
-    			transition_in(indexdropdown.$$.fragment, local);
+    			transition_in(route0.$$.fragment, local);
+    			transition_in(route1.$$.fragment, local);
+    			transition_in(route2.$$.fragment, local);
+    			transition_in(route3.$$.fragment, local);
     			current = true;
     		},
     		o(local) {
-    			transition_out(indexdropdown.$$.fragment, local);
+    			transition_out(route0.$$.fragment, local);
+    			transition_out(route1.$$.fragment, local);
+    			transition_out(route2.$$.fragment, local);
+    			transition_out(route3.$$.fragment, local);
     			current = false;
     		},
     		d(detaching) {
-    			if (detaching) detach(nav);
-    			destroy_component(indexdropdown);
-    			mounted = false;
-    			run_all(dispose);
+    			destroy_component(route0, detaching);
+    			if (detaching) detach(t0);
+    			destroy_component(route1, detaching);
+    			if (detaching) detach(t1);
+    			destroy_component(route2, detaching);
+    			if (detaching) detach(t2);
+    			destroy_component(route3, detaching);
     		}
     	};
     }
 
-    function instance$5($$self, $$props, $$invalidate) {
-    	let navbarOpen = false;
+    function create_fragment$4(ctx) {
+    	let div2;
+    	let sidebar;
+    	let t0;
+    	let div1;
+    	let adminnavbar;
+    	let t1;
+    	let headerstats;
+    	let t2;
+    	let div0;
+    	let router;
+    	let t3;
+    	let footeradmin;
+    	let current;
+    	sidebar = new Sidebar({ props: { location: /*location*/ ctx[0] } });
+    	adminnavbar = new AdminNavbar({});
+    	headerstats = new HeaderStats({});
 
-    	function setNavbarOpen() {
-    		$$invalidate(0, navbarOpen = !navbarOpen);
-    	}
+    	router = new Router({
+    			props: {
+    				url: "admin",
+    				$$slots: { default: [create_default_slot$1] },
+    				$$scope: { ctx }
+    			}
+    		});
 
-    	return [navbarOpen, setNavbarOpen];
+    	footeradmin = new FooterAdmin({});
+
+    	return {
+    		c() {
+    			div2 = element("div");
+    			create_component(sidebar.$$.fragment);
+    			t0 = space();
+    			div1 = element("div");
+    			create_component(adminnavbar.$$.fragment);
+    			t1 = space();
+    			create_component(headerstats.$$.fragment);
+    			t2 = space();
+    			div0 = element("div");
+    			create_component(router.$$.fragment);
+    			t3 = space();
+    			create_component(footeradmin.$$.fragment);
+    			attr(div0, "class", "px-4 md:px-10 mx-auto w-full -m-24");
+    			attr(div1, "class", "relative md:ml-64 bg-blueGray-100");
+    		},
+    		m(target, anchor) {
+    			insert(target, div2, anchor);
+    			mount_component(sidebar, div2, null);
+    			append(div2, t0);
+    			append(div2, div1);
+    			mount_component(adminnavbar, div1, null);
+    			append(div1, t1);
+    			mount_component(headerstats, div1, null);
+    			append(div1, t2);
+    			append(div1, div0);
+    			mount_component(router, div0, null);
+    			append(div0, t3);
+    			mount_component(footeradmin, div0, null);
+    			current = true;
+    		},
+    		p(ctx, [dirty]) {
+    			const sidebar_changes = {};
+    			if (dirty & /*location*/ 1) sidebar_changes.location = /*location*/ ctx[0];
+    			sidebar.$set(sidebar_changes);
+    			const router_changes = {};
+
+    			if (dirty & /*$$scope*/ 4) {
+    				router_changes.$$scope = { dirty, ctx };
+    			}
+
+    			router.$set(router_changes);
+    		},
+    		i(local) {
+    			if (current) return;
+    			transition_in(sidebar.$$.fragment, local);
+    			transition_in(adminnavbar.$$.fragment, local);
+    			transition_in(headerstats.$$.fragment, local);
+    			transition_in(router.$$.fragment, local);
+    			transition_in(footeradmin.$$.fragment, local);
+    			current = true;
+    		},
+    		o(local) {
+    			transition_out(sidebar.$$.fragment, local);
+    			transition_out(adminnavbar.$$.fragment, local);
+    			transition_out(headerstats.$$.fragment, local);
+    			transition_out(router.$$.fragment, local);
+    			transition_out(footeradmin.$$.fragment, local);
+    			current = false;
+    		},
+    		d(detaching) {
+    			if (detaching) detach(div2);
+    			destroy_component(sidebar);
+    			destroy_component(adminnavbar);
+    			destroy_component(headerstats);
+    			destroy_component(router);
+    			destroy_component(footeradmin);
+    		}
+    	};
     }
 
-    class IndexNavbar extends SvelteComponent {
+    function instance$4($$self, $$props, $$invalidate) {
+    	let { location } = $$props;
+    	let { admin = "" } = $$props;
+
+    	$$self.$$set = $$props => {
+    		if ("location" in $$props) $$invalidate(0, location = $$props.location);
+    		if ("admin" in $$props) $$invalidate(1, admin = $$props.admin);
+    	};
+
+    	return [location, admin];
+    }
+
+    class Index extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$5, create_fragment$5, safe_not_equal, {});
+    		init(this, options, instance$4, create_fragment$4, safe_not_equal, { location: 0, admin: 1 });
     	}
     }
 
     /* src/components/Footers/Footer.svelte generated by Svelte v3.35.0 */
 
-    function create_fragment$4(ctx) {
+    function create_fragment$3(ctx) {
     	let footer;
     	let div0;
     	let t0;
@@ -30445,7 +29835,7 @@ var app = (function () {
     	};
     }
 
-    function instance$4($$self) {
+    function instance$3($$self) {
     	let date = new Date().getFullYear();
     	return [date];
     }
@@ -30453,604 +29843,7 @@ var app = (function () {
     class Footer extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$4, create_fragment$4, safe_not_equal, {});
-    	}
-    }
-
-    /* src/views/Index.svelte generated by Svelte v3.35.0 */
-
-    function create_default_slot_2(ctx) {
-    	let div;
-    	let img;
-    	let img_src_value;
-
-    	return {
-    		c() {
-    			div = element("div");
-    			img = element("img");
-    			attr(img, "alt", "...");
-    			attr(img, "class", "align-middle border-none max-w-full h-auto rounded-lg");
-    			if (img.src !== (img_src_value = login)) attr(img, "src", img_src_value);
-    			attr(div, "class", "hover:-mt-4 relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded-lg ease-linear transition-all duration-150");
-    		},
-    		m(target, anchor) {
-    			insert(target, div, anchor);
-    			append(div, img);
-    		},
-    		p: noop,
-    		d(detaching) {
-    			if (detaching) detach(div);
-    		}
-    	};
-    }
-
-    // (602:12) <Link to="/profile">
-    function create_default_slot_1(ctx) {
-    	let div;
-    	let img;
-    	let img_src_value;
-
-    	return {
-    		c() {
-    			div = element("div");
-    			img = element("img");
-    			attr(img, "alt", "...");
-    			attr(img, "class", "align-middle border-none max-w-full h-auto rounded-lg");
-    			if (img.src !== (img_src_value = profile)) attr(img, "src", img_src_value);
-    			attr(div, "class", "hover:-mt-4 relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded-lg ease-linear transition-all duration-150");
-    		},
-    		m(target, anchor) {
-    			insert(target, div, anchor);
-    			append(div, img);
-    		},
-    		p: noop,
-    		d(detaching) {
-    			if (detaching) detach(div);
-    		}
-    	};
-    }
-
-    // (619:12) <Link to="/landing">
-    function create_default_slot$1(ctx) {
-    	let div;
-    	let img;
-    	let img_src_value;
-
-    	return {
-    		c() {
-    			div = element("div");
-    			img = element("img");
-    			attr(img, "alt", "...");
-    			attr(img, "class", "align-middle border-none max-w-full h-auto rounded-lg");
-    			if (img.src !== (img_src_value = landing)) attr(img, "src", img_src_value);
-    			attr(div, "class", "hover:-mt-4 relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded-lg ease-linear transition-all duration-150");
-    		},
-    		m(target, anchor) {
-    			insert(target, div, anchor);
-    			append(div, img);
-    		},
-    		p: noop,
-    		d(detaching) {
-    			if (detaching) detach(div);
-    		}
-    	};
-    }
-
-    function create_fragment$3(ctx) {
-    	let indexnavbar;
-    	let t0;
-    	let section0;
-    	let div3;
-    	let t10;
-    	let img0;
-    	let img0_src_value;
-    	let t11;
-    	let section1;
-    	let div4;
-    	let t12;
-    	let div24;
-    	let t38;
-    	let div45;
-    	let div30;
-    	let div27;
-    	let t61;
-    	let div29;
-    	let div28;
-    	let img2;
-    	let img2_src_value;
-    	let t62;
-    	let img3;
-    	let img3_src_value;
-    	let t63;
-    	let img4;
-    	let img4_src_value;
-    	let t64;
-    	let img5;
-    	let img5_src_value;
-    	let t65;
-    	let img6;
-    	let img6_src_value;
-    	let t66;
-    	let img7;
-    	let img7_src_value;
-    	let t67;
-    	let div44;
-    	let t110;
-    	let div60;
-    	let div59;
-    	let div57;
-    	let t124;
-    	let div58;
-    	let img14;
-    	let img14_src_value;
-    	let t125;
-    	let div62;
-    	let t129;
-    	let section2;
-    	let div69;
-    	let div68;
-    	let div67;
-    	let div66;
-    	let div63;
-    	let h50;
-    	let t131;
-    	let link0;
-    	let t132;
-    	let div64;
-    	let h51;
-    	let t134;
-    	let link1;
-    	let t135;
-    	let div65;
-    	let h52;
-    	let t137;
-    	let link2;
-    	let t138;
-    	let section3;
-    	let t150;
-    	let section4;
-    	let t163;
-    	let footer;
-    	let current;
-    	indexnavbar = new IndexNavbar({});
-
-    	link0 = new Link({
-    			props: {
-    				to: "/auth/login",
-    				$$slots: { default: [create_default_slot_2] },
-    				$$scope: { ctx }
-    			}
-    		});
-
-    	link1 = new Link({
-    			props: {
-    				to: "/profile",
-    				$$slots: { default: [create_default_slot_1] },
-    				$$scope: { ctx }
-    			}
-    		});
-
-    	link2 = new Link({
-    			props: {
-    				to: "/landing",
-    				$$slots: { default: [create_default_slot$1] },
-    				$$scope: { ctx }
-    			}
-    		});
-
-    	footer = new Footer({});
-
-    	return {
-    		c() {
-    			create_component(indexnavbar.$$.fragment);
-    			t0 = space();
-    			section0 = element("section");
-    			div3 = element("div");
-
-    			div3.innerHTML = `<div class="w-full md:w-8/12 lg:w-6/12 xl:w-6/12 px-4"><div class="pt-32 sm:pt-0"><h2 class="font-semibold text-4xl text-blueGray-600">Notus Svelte - A beautiful extension for Tailwind CSS.</h2> 
-        <p class="mt-4 text-lg leading-relaxed text-blueGray-500">Notus Svelte is Free and Open Source. It does not change any of the CSS from
-          <a href="https://tailwindcss.com/?ref=creativetim" class="text-blueGray-600" target="_blank">Tailwind CSS.</a>
-          It features multiple HTML elements and it comes with dynamic
-          components for ReactJS, Vue and Angular.</p> 
-        <div class="mt-12"><a href="https://www.creative-tim.com/learning-lab/tailwind/svelte/overview/notus?ref=ns-index" target="_blank" class="get-started text-white font-bold px-6 py-4 rounded outline-none focus:outline-none mr-1 mb-1 bg-red-400 active:bg-red-500 uppercase text-sm shadow hover:shadow-lg ease-linear transition-all duration-150">Get started</a> 
-          <a href="https://github.com/creativetimofficial/notus-svelte?ref=ns-index" class="github-star ml-1 text-white font-bold px-6 py-4 rounded outline-none focus:outline-none mr-1 mb-1 bg-blueGray-700 active:bg-blueGray-600 uppercase text-sm shadow hover:shadow-lg ease-linear transition-all duration-150" target="_blank">Github Star</a></div></div></div>`;
-
-    			t10 = space();
-    			img0 = element("img");
-    			t11 = space();
-    			section1 = element("section");
-    			div4 = element("div");
-    			div4.innerHTML = `<svg class="absolute bottom-0 overflow-hidden" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" version="1.1" viewBox="0 0 2560 100" x="0" y="0"><polygon class="text-blueGray-100 fill-current" points="2560 0 2560 100 0 100"></polygon></svg>`;
-    			t12 = space();
-    			div24 = element("div");
-
-    			div24.innerHTML = `<div class="flex flex-wrap items-center"><div class="w-10/12 md:w-6/12 lg:w-4/12 px-12 md:px-4 mr-auto ml-auto -mt-32"><div class="relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded-lg bg-red-400"><img alt="..." src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-1.2.1&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;auto=format&amp;fit=crop&amp;w=700&amp;q=80" class="w-full align-middle rounded-t-lg"/> 
-          <blockquote class="relative p-8 mb-4"><svg preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 583 95" class="absolute left-0 w-full block h-95-px -top-94-px"><polygon points="-30,95 583,95 583,65" class="text-red-400 fill-current"></polygon></svg> 
-            <h4 class="text-xl font-bold text-white">Great for your awesome project</h4> 
-            <p class="text-md font-light mt-2 text-white">Putting together a page has never been easier than matching
-              together pre-made components. From landing pages presentation to
-              login areas, you can easily customise and built your pages.</p></blockquote></div></div> 
-
-      <div class="w-full md:w-6/12 px-4"><div class="flex flex-wrap"><div class="w-full md:w-6/12 px-4"><div class="relative flex flex-col mt-4"><div class="px-4 py-5 flex-auto"><div class="text-blueGray-500 p-3 text-center inline-flex items-center justify-center w-12 h-12 mb-5 shadow-lg rounded-full bg-white"><i class="fas fa-sitemap"></i></div> 
-                <h6 class="text-xl mb-1 font-semibold">CSS Components</h6> 
-                <p class="mb-4 text-blueGray-500">Notus Svelte comes with a huge number of Fully Coded CSS
-                  components.</p></div></div> 
-            <div class="relative flex flex-col min-w-0"><div class="px-4 py-5 flex-auto"><div class="text-blueGray-500 p-3 text-center inline-flex items-center justify-center w-12 h-12 mb-5 shadow-lg rounded-full bg-white"><i class="fas fa-drafting-compass"></i></div> 
-                <h6 class="text-xl mb-1 font-semibold">JavaScript Components</h6> 
-                <p class="mb-4 text-blueGray-500">We also feature many dynamic components for React, NextJS, Vue
-                  and Angular.</p></div></div></div> 
-          <div class="w-full md:w-6/12 px-4"><div class="relative flex flex-col min-w-0 mt-4"><div class="px-4 py-5 flex-auto"><div class="text-blueGray-500 p-3 text-center inline-flex items-center justify-center w-12 h-12 mb-5 shadow-lg rounded-full bg-white"><i class="fas fa-newspaper"></i></div> 
-                <h6 class="text-xl mb-1 font-semibold">Pages</h6> 
-                <p class="mb-4 text-blueGray-500">This extension also comes with 3 sample pages. They are fully
-                  coded so you can start working instantly.</p></div></div> 
-            <div class="relative flex flex-col min-w-0"><div class="px-4 py-5 flex-auto"><div class="text-blueGray-500 p-3 text-center inline-flex items-center justify-center w-12 h-12 mb-5 shadow-lg rounded-full bg-white"><i class="fas fa-file-alt"></i></div> 
-                <h6 class="text-xl mb-1 font-semibold">Documentation</h6> 
-                <p class="mb-4 text-blueGray-500">Built by developers for developers. You will love how easy is
-                  to to work with Notus Svelte.</p></div></div></div></div></div></div>`;
-
-    			t38 = space();
-    			div45 = element("div");
-    			div30 = element("div");
-    			div27 = element("div");
-
-    			div27.innerHTML = `<div class="text-blueGray-500 p-3 text-center inline-flex items-center justify-center w-16 h-16 mb-6 shadow-lg rounded-full bg-white"><i class="fas fa-sitemap text-xl"></i></div> 
-        <h3 class="text-3xl mb-2 font-semibold leading-normal">CSS Components</h3> 
-        <p class="text-lg font-light leading-relaxed mt-4 mb-4 text-blueGray-600">Every element that you need in a product comes built in as a
-          component. All components fit perfectly with each other and can have
-          different colours.</p> 
-        <div class="block pb-6"><span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Buttons</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Inputs</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Labels</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Menus</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Navbars</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Pagination</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Progressbars</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Typography</span></div> 
-        <a href="https://www.creative-tim.com/learning-lab/tailwind/svelte/alerts/notus?ref=ns-index" target="_blank" class="font-bold text-blueGray-700 hover:text-blueGray-500 ease-linear transition-all duration-150">View All
-          <i class="fa fa-angle-double-right ml-1 leading-relaxed"></i></a>`;
-
-    			t61 = space();
-    			div29 = element("div");
-    			div28 = element("div");
-    			img2 = element("img");
-    			t62 = space();
-    			img3 = element("img");
-    			t63 = space();
-    			img4 = element("img");
-    			t64 = space();
-    			img5 = element("img");
-    			t65 = space();
-    			img6 = element("img");
-    			t66 = space();
-    			img7 = element("img");
-    			t67 = space();
-    			div44 = element("div");
-
-    			div44.innerHTML = `<div class="w-full md:w-6/12 px-4 mr-auto ml-auto mt-32"><div class="justify-center flex flex-wrap relative"><div class="my-4 w-full lg:w-6/12 px-4"><a href="https://www.creative-tim.com/learning-lab/tailwind/svelte/alerts/notus?ref=ns-index" target="_blank"><div class="bg-red-600 shadow-lg rounded-lg text-center p-8"><img alt="..." class="shadow-md rounded-full max-w-full w-16 mx-auto p-2 bg-white" src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/svelte.jpg"/> 
-                <p class="text-lg text-white mt-4 font-semibold">Svelte</p></div></a> 
-            <a href="https://www.creative-tim.com/learning-lab/tailwind/react/alerts/notus?ref=ns-index" target="_blank"><div class="bg-lightBlue-500 shadow-lg rounded-lg text-center p-8 mt-8"><img alt="..." class="shadow-md rounded-full max-w-full w-16 mx-auto p-2 bg-white" src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/react.jpg"/> 
-                <p class="text-lg text-white mt-4 font-semibold">ReactJS</p></div></a> 
-            <a href="https://www.creative-tim.com/learning-lab/tailwind/nextjs/alerts/notus?ref=ns-index" target="_blank"><div class="bg-blueGray-700 shadow-lg rounded-lg text-center p-8 mt-8"><img alt="..." class="shadow-md rounded-full max-w-full w-16 mx-auto p-2 bg-white" src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/nextjs.jpg"/> 
-                <p class="text-lg text-white mt-4 font-semibold">NextJS</p></div></a></div> 
-          <div class="my-4 w-full lg:w-6/12 px-4 lg:mt-16"><a href="https://www.creative-tim.com/learning-lab/tailwind/js/alerts/notus?ref=ns-index" target="_blank"><div class="bg-yellow-500 shadow-lg rounded-lg text-center p-8"><img alt="..." class="shadow-md rounded-full max-w-full w-16 mx-auto p-2 bg-white" src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/js.png"/> 
-                <p class="text-lg text-white mt-4 font-semibold">JavaScript</p></div></a> 
-            <a href="https://www.creative-tim.com/learning-lab/tailwind/angular/alerts/notus?ref=ns-index" target="_blank"><div class="bg-red-700 shadow-lg rounded-lg text-center p-8 mt-8"><img alt="..." class="shadow-md rounded-full max-w-full w-16 mx-auto p-2 bg-white" src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/angular.jpg"/> 
-                <p class="text-lg text-white mt-4 font-semibold">Angular</p></div></a> 
-            <a href="https://www.creative-tim.com/learning-lab/tailwind/vue/alerts/notus?ref=ns-index" target="_blank"><div class="bg-emerald-500 shadow-lg rounded-lg text-center p-8 mt-8"><img alt="..." class="shadow-md rounded-full max-w-full w-16 mx-auto p-2 bg-white" src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/vue.jpg"/> 
-                <p class="text-lg text-white mt-4 font-semibold">Vue.js</p></div></a></div></div></div> 
-
-      <div class="w-full md:w-4/12 px-12 md:px-4 ml-auto mr-auto mt-48"><div class="text-blueGray-500 p-3 text-center inline-flex items-center justify-center w-16 h-16 mb-6 shadow-lg rounded-full bg-white"><i class="fas fa-drafting-compass text-xl"></i></div> 
-        <h3 class="text-3xl mb-2 font-semibold leading-normal">Javascript Components</h3> 
-        <p class="text-lg font-light leading-relaxed mt-4 mb-4 text-blueGray-600">In order to create a great User Experience some components require
-          JavaScript. In this way you can manipulate the elements on the page
-          and give more options to your users.</p> 
-        <p class="text-lg font-light leading-relaxed mt-4 mb-4 text-blueGray-600">We created a set of Components that are dynamic and come to help you.</p> 
-        <div class="block pb-6"><span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Alerts</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Dropdowns</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Menus</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Modals</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Navbars</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Popovers</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Tabs</span> 
-          <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-white uppercase last:mr-0 mr-2 mt-2">Tooltips</span></div> 
-        <a href="https://www.creative-tim.com/learning-lab/tailwind/svelte/alerts/notus?ref=ns-index" target="_blank" class="font-bold text-blueGray-700 hover:text-blueGray-500 ease-linear transition-all duration-150">View all
-          <i class="fa fa-angle-double-right ml-1 leading-relaxed"></i></a></div>`;
-
-    			t110 = space();
-    			div60 = element("div");
-    			div59 = element("div");
-    			div57 = element("div");
-
-    			div57.innerHTML = `<div class="md:pr-12"><div class="text-blueGray-500 p-3 text-center inline-flex items-center justify-center w-16 h-16 mb-6 shadow-lg rounded-full bg-white"><i class="fas fa-file-alt text-xl"></i></div> 
-          <h3 class="text-3xl font-semibold">Complex Documentation</h3> 
-          <p class="mt-4 text-lg leading-relaxed text-blueGray-500">This extension comes a lot of fully coded examples that help you get
-            started faster. You can adjust the colors and also the programming
-            language. You can change the text and images and you&#39;re good to go.</p> 
-          <ul class="list-none mt-6"><li class="py-2"><div class="flex items-center"><div><span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-blueGray-50 mr-3"><i class="fas fa-fingerprint"></i></span></div> 
-                <div><h4 class="text-blueGray-500">Built by Developers for Developers</h4></div></div></li> 
-            <li class="py-2"><div class="flex items-center"><div><span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-blueGray-50 mr-3"><i class="fab fa-html5"></i></span></div> 
-                <div><h4 class="text-blueGray-500">Carefully crafted code for Components</h4></div></div></li> 
-            <li class="py-2"><div class="flex items-center"><div><span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blueGray-500 bg-blueGray-50 mr-3"><i class="far fa-paper-plane"></i></span></div> 
-                <div><h4 class="text-blueGray-500">Dynamic Javascript Components</h4></div></div></li></ul></div>`;
-
-    			t124 = space();
-    			div58 = element("div");
-    			img14 = element("img");
-    			t125 = space();
-    			div62 = element("div");
-
-    			div62.innerHTML = `<div class="w-full md:w-6/12 px-12 md:px-4"><h2 class="font-semibold text-4xl">Beautiful Example Pages</h2> 
-      <p class="text-lg leading-relaxed mt-4 mb-4 text-blueGray-500">Notus Svelte is a completly new product built using our past
-        experience in web templates. Take the examples we made for you and start
-        playing with them.</p></div>`;
-
-    			t129 = space();
-    			section2 = element("section");
-    			div69 = element("div");
-    			div68 = element("div");
-    			div67 = element("div");
-    			div66 = element("div");
-    			div63 = element("div");
-    			h50 = element("h5");
-    			h50.textContent = "Login Page";
-    			t131 = space();
-    			create_component(link0.$$.fragment);
-    			t132 = space();
-    			div64 = element("div");
-    			h51 = element("h5");
-    			h51.textContent = "Profile Page";
-    			t134 = space();
-    			create_component(link1.$$.fragment);
-    			t135 = space();
-    			div65 = element("div");
-    			h52 = element("h5");
-    			h52.textContent = "Landing Page";
-    			t137 = space();
-    			create_component(link2.$$.fragment);
-    			t138 = space();
-    			section3 = element("section");
-
-    			section3.innerHTML = `<div class="container mx-auto pb-64"><div class="flex flex-wrap justify-center"><div class="w-full md:w-5/12 px-12 md:px-4 ml-auto mr-auto md:mt-64"><div class="text-blueGray-500 p-3 text-center inline-flex items-center justify-center w-16 h-16 mb-6 shadow-lg rounded-full bg-white"><i class="fas fa-code-branch text-xl"></i></div> 
-        <h3 class="text-3xl mb-2 font-semibold leading-normal text-white">Open Source</h3> 
-        <p class="text-lg font-light leading-relaxed mt-4 mb-4 text-blueGray-400">Since
-          <a href="https://tailwindcss.com/?ref=creativetim" class="text-blueGray-300" target="_blank">Tailwind CSS</a>
-          is an open source project we wanted to continue this movement too. You
-          can give this version a try to feel the design and also test the
-          quality of the code!</p> 
-        <p class="text-lg font-light leading-relaxed mt-0 mb-4 text-blueGray-400">Get it free on Github and please help us spread the news with a Star!</p> 
-        <a href="https://github.com/creativetimofficial/notus-svelte?ref=ns-index" target="_blank" class="github-star mt-4 inline-block text-white font-bold px-6 py-4 rounded outline-none focus:outline-none mr-1 mb-1 bg-blueGray-700 active:bg-blueGray-600 uppercase text-sm shadow hover:shadow-lg ease-linear transition-all duration-150">Github Star</a></div> 
-
-      <div class="w-full md:w-4/12 px-4 mr-auto ml-auto mt-32 relative"><i class="fab fa-github text-blueGray-700 text-55 absolute -top-150-px -right-100 left-auto opacity-80"></i></div></div></div>`;
-
-    			t150 = space();
-    			section4 = element("section");
-
-    			section4.innerHTML = `<div class="-mt-20 top-0 bottom-auto left-0 right-0 w-full absolute h-20" style="transform: translateZ(0);"><svg class="absolute bottom-0 overflow-hidden" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" version="1.1" viewBox="0 0 2560 100" x="0" y="0"><polygon class="text-blueGray-200 fill-current" points="2560 0 2560 100 0 100"></polygon></svg></div> 
-
-  <div class="container mx-auto"><div class="flex flex-wrap justify-center bg-white shadow-xl rounded-lg -mt-64 py-16 px-12 relative z-10"><div class="w-full text-center lg:w-8/12"><p class="text-4xl text-center"><span role="img" aria-label="love">😍</span></p> 
-        <h3 class="font-semibold text-3xl">Do you love this Starter Kit?</h3> 
-        <p class="text-blueGray-500 text-lg leading-relaxed mt-4 mb-4">Cause if you do, it can be yours now. Hit the buttons below to
-          navigate to get the Free version for your next project. Build a new
-          web app or give an old project a new look!</p> 
-        <div class="sm:block flex flex-col mt-10"><a href="https://www.creative-tim.com/learning-lab/tailwind/svelte/overview/notus?ref=ns-index" target="_blank" class="get-started text-white font-bold px-6 py-4 rounded outline-none focus:outline-none mr-1 mb-2 bg-red-400 active:bg-red-500 uppercase text-sm shadow hover:shadow-lg ease-linear transition-all duration-150">Get started</a> 
-          <a href="https://github.com/creativetimofficial/notus-svelte?ref=ns-index" target="_blank" class="github-star sm:ml-1 text-white font-bold px-6 py-4 rounded outline-none focus:outline-none mr-1 mb-1 bg-blueGray-700 active:bg-blueGray-600 uppercase text-sm shadow hover:shadow-lg ease-linear transition-all duration-150"><i class="fab fa-github text-lg mr-1"></i> 
-            <span>Help With a Star</span></a></div> 
-        <div class="text-center mt-16"></div></div></div></div>`;
-
-    			t163 = space();
-    			create_component(footer.$$.fragment);
-    			attr(div3, "class", "container mx-auto items-center flex flex-wrap");
-    			attr(img0, "class", "absolute top-0 b-auto right-0 pt-16 sm:w-6/12 -mt-48 sm:mt-0 w-10/12 max-h-860-px");
-    			if (img0.src !== (img0_src_value = patternVue)) attr(img0, "src", img0_src_value);
-    			attr(img0, "alt", "...");
-    			attr(section0, "class", "header relative pt-16 items-center flex h-screen max-h-860-px");
-    			attr(div4, "class", "-mt-20 top-0 bottom-auto left-0 right-0 w-full absolute h-20");
-    			set_style(div4, "transform", "translateZ(0)");
-    			attr(div24, "class", "container mx-auto");
-    			attr(div27, "class", "w-full md:w-4/12 px-12 md:px-4 ml-auto mr-auto mt-48");
-    			attr(img2, "alt", "...");
-    			if (img2.src !== (img2_src_value = componentBtn)) attr(img2, "src", img2_src_value);
-    			attr(img2, "class", "w-full align-middle rounded absolute shadow-lg max-w-100-px left-145-px -top-29-px z-3");
-    			attr(img3, "alt", "...");
-    			if (img3.src !== (img3_src_value = componentProfileCard)) attr(img3, "src", img3_src_value);
-    			attr(img3, "class", "w-full align-middle rounded-lg absolute shadow-lg max-w-210-px left-260-px -top-160-px");
-    			attr(img4, "alt", "...");
-    			if (img4.src !== (img4_src_value = componentInfoCard)) attr(img4, "src", img4_src_value);
-    			attr(img4, "class", "w-full align-middle rounded-lg absolute shadow-lg max-w-180-px left-40-px -top-225-px z-2");
-    			attr(img5, "alt", "...");
-    			if (img5.src !== (img5_src_value = componentInfo2)) attr(img5, "src", img5_src_value);
-    			attr(img5, "class", "w-full align-middle rounded-lg absolute shadow-2xl max-w-200-px -left-50-px top-25-px");
-    			attr(img6, "alt", "...");
-    			if (img6.src !== (img6_src_value = componentMenu)) attr(img6, "src", img6_src_value);
-    			attr(img6, "class", "w-full align-middle rounded absolute shadow-lg max-w-580-px -left-20-px top-210-px");
-    			attr(img7, "alt", "...");
-    			if (img7.src !== (img7_src_value = componentBtnPink)) attr(img7, "src", img7_src_value);
-    			attr(img7, "class", "w-full align-middle rounded absolute shadow-xl max-w-120-px left-195-px top-95-px");
-    			attr(div28, "class", "relative flex flex-col min-w-0 w-full mb-6 mt-48 md:mt-0");
-    			attr(div29, "class", "w-full md:w-5/12 px-4 mr-auto ml-auto mt-32");
-    			attr(div30, "class", "flex flex-wrap items-center");
-    			attr(div44, "class", "flex flex-wrap items-center pt-32");
-    			attr(div45, "class", "container mx-auto overflow-hidden pb-20");
-    			attr(div57, "class", "w-full md:w-5/12 ml-auto px-12 md:px-4");
-    			attr(img14, "alt", "...");
-    			attr(img14, "class", "max-w-full rounded-lg shadow-xl");
-    			set_style(img14, "transform", "scale(1) perspective(1040px) rotateY(-11deg)\n              rotateX(2deg) rotate(2deg)");
-    			if (img14.src !== (img14_src_value = documentation)) attr(img14, "src", img14_src_value);
-    			attr(div58, "class", "w-full md:w-6/12 mr-auto px-4 pt-24 md:pt-0");
-    			attr(div59, "class", "items-center flex flex-wrap");
-    			attr(div60, "class", "container mx-auto px-4 pb-32 pt-48");
-    			attr(div62, "class", "justify-center text-center flex flex-wrap mt-24");
-    			attr(section1, "class", "mt-48 md:mt-40 pb-40 relative bg-blueGray-100");
-    			attr(h50, "class", "text-xl font-semibold pb-4 text-center");
-    			attr(div63, "class", "w-full lg:w-4/12 px-4");
-    			attr(h51, "class", "text-xl font-semibold pb-4 text-center");
-    			attr(div64, "class", "w-full lg:w-4/12 px-4");
-    			attr(h52, "class", "text-xl font-semibold pb-4 text-center");
-    			attr(div65, "class", "w-full lg:w-4/12 px-4");
-    			attr(div66, "class", "flex flex-wrap");
-    			attr(div67, "class", "w-full lg:w-12/12 px-4 -mt-24");
-    			attr(div68, "class", "justify-center flex flex-wrap");
-    			attr(div69, "class", "container mx-auto");
-    			attr(section2, "class", "block relative z-1 bg-blueGray-600");
-    			attr(section3, "class", "py-20 bg-blueGray-600 overflow-hidden");
-    			attr(section4, "class", "pb-16 bg-blueGray-200 relative pt-32");
-    		},
-    		m(target, anchor) {
-    			mount_component(indexnavbar, target, anchor);
-    			insert(target, t0, anchor);
-    			insert(target, section0, anchor);
-    			append(section0, div3);
-    			append(section0, t10);
-    			append(section0, img0);
-    			insert(target, t11, anchor);
-    			insert(target, section1, anchor);
-    			append(section1, div4);
-    			append(section1, t12);
-    			append(section1, div24);
-    			append(section1, t38);
-    			append(section1, div45);
-    			append(div45, div30);
-    			append(div30, div27);
-    			append(div30, t61);
-    			append(div30, div29);
-    			append(div29, div28);
-    			append(div28, img2);
-    			append(div28, t62);
-    			append(div28, img3);
-    			append(div28, t63);
-    			append(div28, img4);
-    			append(div28, t64);
-    			append(div28, img5);
-    			append(div28, t65);
-    			append(div28, img6);
-    			append(div28, t66);
-    			append(div28, img7);
-    			append(div45, t67);
-    			append(div45, div44);
-    			append(section1, t110);
-    			append(section1, div60);
-    			append(div60, div59);
-    			append(div59, div57);
-    			append(div59, t124);
-    			append(div59, div58);
-    			append(div58, img14);
-    			append(section1, t125);
-    			append(section1, div62);
-    			insert(target, t129, anchor);
-    			insert(target, section2, anchor);
-    			append(section2, div69);
-    			append(div69, div68);
-    			append(div68, div67);
-    			append(div67, div66);
-    			append(div66, div63);
-    			append(div63, h50);
-    			append(div63, t131);
-    			mount_component(link0, div63, null);
-    			append(div66, t132);
-    			append(div66, div64);
-    			append(div64, h51);
-    			append(div64, t134);
-    			mount_component(link1, div64, null);
-    			append(div66, t135);
-    			append(div66, div65);
-    			append(div65, h52);
-    			append(div65, t137);
-    			mount_component(link2, div65, null);
-    			insert(target, t138, anchor);
-    			insert(target, section3, anchor);
-    			insert(target, t150, anchor);
-    			insert(target, section4, anchor);
-    			insert(target, t163, anchor);
-    			mount_component(footer, target, anchor);
-    			current = true;
-    		},
-    		p(ctx, [dirty]) {
-    			const link0_changes = {};
-
-    			if (dirty & /*$$scope*/ 2) {
-    				link0_changes.$$scope = { dirty, ctx };
-    			}
-
-    			link0.$set(link0_changes);
-    			const link1_changes = {};
-
-    			if (dirty & /*$$scope*/ 2) {
-    				link1_changes.$$scope = { dirty, ctx };
-    			}
-
-    			link1.$set(link1_changes);
-    			const link2_changes = {};
-
-    			if (dirty & /*$$scope*/ 2) {
-    				link2_changes.$$scope = { dirty, ctx };
-    			}
-
-    			link2.$set(link2_changes);
-    		},
-    		i(local) {
-    			if (current) return;
-    			transition_in(indexnavbar.$$.fragment, local);
-    			transition_in(link0.$$.fragment, local);
-    			transition_in(link1.$$.fragment, local);
-    			transition_in(link2.$$.fragment, local);
-    			transition_in(footer.$$.fragment, local);
-    			current = true;
-    		},
-    		o(local) {
-    			transition_out(indexnavbar.$$.fragment, local);
-    			transition_out(link0.$$.fragment, local);
-    			transition_out(link1.$$.fragment, local);
-    			transition_out(link2.$$.fragment, local);
-    			transition_out(footer.$$.fragment, local);
-    			current = false;
-    		},
-    		d(detaching) {
-    			destroy_component(indexnavbar, detaching);
-    			if (detaching) detach(t0);
-    			if (detaching) detach(section0);
-    			if (detaching) detach(t11);
-    			if (detaching) detach(section1);
-    			if (detaching) detach(t129);
-    			if (detaching) detach(section2);
-    			destroy_component(link0);
-    			destroy_component(link1);
-    			destroy_component(link2);
-    			if (detaching) detach(t138);
-    			if (detaching) detach(section3);
-    			if (detaching) detach(t150);
-    			if (detaching) detach(section4);
-    			if (detaching) detach(t163);
-    			destroy_component(footer, detaching);
-    		}
-    	};
-    }
-
-    const patternVue = "/assets/img/pattern_svelte.png";
-    const componentBtn = "/assets/img/component-btn.png";
-    const componentProfileCard = "/assets/img/component-profile-card.png";
-    const componentInfoCard = "/assets/img/component-info-card.png";
-    const componentInfo2 = "/assets/img/component-info-2.png";
-    const componentMenu = "/assets/img/component-menu.png";
-    const componentBtnPink = "/assets/img/component-btn-pink.png";
-    const documentation = "/assets/img/documentation.png";
-    const login = "/assets/img/login.jpg";
-    const profile = "/assets/img/profile.jpg";
-    const landing = "/assets/img/landing.jpg";
-
-    function instance$3($$self, $$props, $$invalidate) {
-    	let { location } = $$props;
-
-    	$$self.$$set = $$props => {
-    		if ("location" in $$props) $$invalidate(0, location = $$props.location);
-    	};
-
-    	return [location];
-    }
-
-    class Index extends SvelteComponent {
-    	constructor(options) {
-    		super();
-    		init(this, options, instance$3, create_fragment$3, safe_not_equal, { location: 0 });
+    		init(this, options, instance$3, create_fragment$3, safe_not_equal, {});
     	}
     }
 

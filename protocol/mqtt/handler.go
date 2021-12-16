@@ -25,9 +25,9 @@ var onSensorData paho.MessageHandler = func(client paho.Client, msg paho.Message
 		return
 	}
 	topic := msg.Topic()
-	elem := strings.Split(topic, " ")
-	elem = elem[:len(elem)-1]
-	influxModel.PerformPost(strings.Join(elem, " "), data)
+	elem := strings.Split(topic, "/")
+	elem = elem[2:]
+	influxModel.PerformPost(strings.ToUpper(strings.Join(elem, " ")), data)
 }
 
 var connHandler paho.OnConnectHandler = func(client paho.Client) {

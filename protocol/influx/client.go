@@ -27,12 +27,15 @@ func Get() Model {
 
 // PerformPost return influx client
 func (s Model) PerformPost(device string, data map[string]interface{}) {
+	fmt.Println(device)
+	fmt.Println(data)
 	p := influxdb2.NewPoint("LMM",
 		map[string]string{"device": device},
 		data,
 		time.Now())
 	err := s.wri.WritePoint(context.Background(), p)
 	if err != nil {
+		fmt.Println(err.Error())
 		fmt.Println("Error on Point write")
 	}
 }
