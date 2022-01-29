@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"strconv"
 
@@ -9,7 +10,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+var version string // set by the compiler!
+
 func main() {
+	verP := flag.Bool("version", false, "show version")
+	flag.Parse()
+	if *verP {
+		fmt.Println(version)
+		return
+	}
 	conf, err := config.LoadInternal()
 	if err != nil {
 		panic("Failed to read configuration file")
