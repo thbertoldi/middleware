@@ -12,8 +12,13 @@ import (
 
 var version string // set by the compiler!
 
+func startAsyncServices() {
+	go mqtt.Run()
+}
+
 func main() {
 	verP := flag.Bool("version", false, "show version")
+	devP := flag.Bool("dev", false, "run dev mode")
 	flag.Parse()
 	if *verP {
 		fmt.Println(version)
@@ -25,14 +30,23 @@ func main() {
 	}
 	app := fiber.New()
 	app.Static("/", "./web/public")
-	app.Get("/api", func(c *fiber.Ctx) error {
-		err := c.SendString("hi there")
+	app.Get("/api/config", func(c *fiber.Ctx) error {
+		err := c.Status(200).JSON(conf)
 		return err
+	})
+	app.Post("/api/config", func(c *fiber.Ctx) error {
+		if err := c.BodyParser(&conf); err != nil {
+			return err
+		}
+		fmt.Println(conf)
+		return nil
 	})
 	app.Get("*", func(c *fiber.Ctx) error {
 		err := c.SendFile("web/public/index.html")
 		return err
 	})
-	go mqtt.Run()
+	if !*devP{
+		startAsyncServices()
+	}
 	fmt.Println(app.Listen(":" + strconv.Itoa(conf.HTTP.Port)))
 }
