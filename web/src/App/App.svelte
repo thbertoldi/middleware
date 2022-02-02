@@ -59,7 +59,7 @@
                 <div class="row mb-3">
                     <label class="col-sm-2 col-form-label">Dispositivos</label>
                     <div class="col-sm-1">
-                        <input bind:value={allowJoin} type="checkbox" class="form-check-input" id="checkJoin">
+                        <input bind:checked={allowJoin} type="checkbox" class="form-check-input" id="checkJoin">
                     </div>
                     <label class="col-sm-4 form-check-label" for="checkJoin">Permitir auto-cadastro de dispositivos</label>
                 </div>
