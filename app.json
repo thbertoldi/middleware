@@ -1,11 +1,13 @@
 {
-    "mqtt": {
-        "host": "150.162.14.51",
-        "port": 1883,
-        "topic": ["dev/lmm/+/+/+"],
-        "id": "mqtt_iot_middleware"
-    },
-    "http": {
-        "port": 5000
-    }
+  "http": {
+    "port": 5000
+  },
+  "mqtt": {
+    "host": "150.162.14.51",
+    "id": "mqtt_iot_middleware",
+    "port": 1883,
+    "topic": [
+      "dev/lmm/+/+/+"
+    ]
+  }
 }

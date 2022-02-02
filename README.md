@@ -7,7 +7,7 @@
 This project depends on the following projects to run correctly (install with the package manager of your distro of choice):
 
 ```sh
-$ sudo pacman -S go docker
+$ sudo pacman -S go docker npm
 $ pip install --user docker-compose
 ```
 
@@ -32,8 +32,23 @@ Start InfluxDB:
 ```sh
 $ docker-compose up
 ```
+
+Install web dependencies:
+
+```sh
+$ cd web
+$ npm install
+```
+
+Build web application:
+
+```sh
+$ cd web
+$ npm run build
+```
+
 Start Golang Middleware:
 
 ```sh
-$ go run .
+$ go run . --dev
 ```
