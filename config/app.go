@@ -1,6 +1,9 @@
 package config
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/spf13/viper"
 )
 
@@ -33,21 +36,32 @@ type Internal struct {
 	HTTP HTTP `json:"http"`
 }
 
+var v1 = viper.New()
+
+func Write(config []byte) error {
+	fmt.Println(string(config))
+	err := v1.ReadConfig(bytes.NewBuffer(config))
+	if err != nil {
+		return err
+	}
+	fmt.Println(v1.AllSettings())
+	return v1.WriteConfig()
+}
+
 // LoadInternal loads internal configuration
 func LoadInternal() (config Internal, err error) {
-	v := viper.New()
-	v.AddConfigPath(".")
-	v.SetConfigName("app")
-	v.SetConfigType("json")
+	v1.AddConfigPath(".")
+	v1.SetConfigName("app")
+	v1.SetConfigType("json")
 
-	v.AutomaticEnv()
+	v1.AutomaticEnv()
 
-	err = v.ReadInConfig()
+	err = v1.ReadInConfig()
 	if err != nil {
 		return
 	}
 
-	err = v.Unmarshal(&config)
+	err = v1.Unmarshal(&config)
 	return
 }
 

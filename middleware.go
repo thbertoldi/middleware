@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"strconv"
@@ -35,11 +36,17 @@ func main() {
 		return err
 	})
 	app.Post("/api/config", func(c *fiber.Ctx) error {
-		if err := c.BodyParser(&conf); err != nil {
+		newConf := new(config.Internal)
+		if err := json.Unmarshal(c.Body(), &newConf); err != nil {
+			fmt.Println(err.Error())
 			return err
 		}
-		fmt.Println(conf)
-		return nil
+		conf = *newConf
+		err := config.Write(c.Body())
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		return err
 	})
 	app.Get("*", func(c *fiber.Ctx) error {
 		err := c.SendFile("web/public/index.html")
