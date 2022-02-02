@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"codigos.ufsc.br/g.manoel/pi_das_2021_2/device"
 	"codigos.ufsc.br/g.manoel/pi_das_2021_2/protocol/influx"
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
@@ -28,6 +29,9 @@ var onSensorData paho.MessageHandler = func(client paho.Client, msg paho.Message
 	elem := strings.Split(topic, "/")
 	elem = elem[2:]
 	influxModel.PerformPost(strings.ToUpper(strings.Join(elem, " ")), data)
+	_ = device.GetOrCreate(elem[0], elem[1]) // TODO: Initialize a var
+	// TODO: Check message payload to update sensors,
+	// dev.UpdateSensor("F", "my_sensor", 1)
 }
 
 var connHandler paho.OnConnectHandler = func(client paho.Client) {
