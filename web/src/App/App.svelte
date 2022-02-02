@@ -1,7 +1,9 @@
 <script>
  import { onMount } from 'svelte';
+ import Device from '../Components/Device/Device.svelte'
  let appConfig = {"http": {"port": 0}, "mqtt": {"host": "", "port": 0, "topic": [], "id": ""}};
  let allowJoin = true;
+ $: deviceList = {};
  async function sendConfig() {
      const res = await fetch(location.origin + "/api/config", {
          method: 'POST',
@@ -13,6 +15,13 @@
          .then(response => response.json())
          .then(data => {
              appConfig = data
+         }).catch(error => {
+             return [];
+         });
+     fetch(location.origin + "/api/device")
+         .then(response => response.json())
+         .then(data => {
+             deviceList = data;
          }).catch(error => {
              return [];
          });
@@ -69,6 +78,7 @@
                     </div>
                 </div>
             </form>
+            <Device {deviceList}></Device>
         </div>
     </body>
 </html>

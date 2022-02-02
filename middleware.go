@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"codigos.ufsc.br/g.manoel/pi_das_2021_2/config"
+	"codigos.ufsc.br/g.manoel/pi_das_2021_2/device"
 	"codigos.ufsc.br/g.manoel/pi_das_2021_2/protocol/mqtt"
 	"github.com/gofiber/fiber/v2"
 )
@@ -46,6 +47,11 @@ func main() {
 		if err != nil {
 			fmt.Println(err.Error())
 		}
+		return err
+	})
+	app.Get("/api/device", func(c *fiber.Ctx) error {
+		result := device.GetAll()
+		err := c.Status(200).JSON(result)
 		return err
 	})
 	app.Get("*", func(c *fiber.Ctx) error {
