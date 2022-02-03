@@ -61,5 +61,6 @@ func main() {
 	if !*devP{
 		startAsyncServices()
 	}
+	_ = device.GetOrCreate("MF", "000")
 	fmt.Println(app.Listen(":" + strconv.Itoa(conf.HTTP.Port)))
 }
