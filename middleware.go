@@ -54,6 +54,18 @@ func main() {
 		err := c.Status(200).JSON(result)
 		return err
 	})
+	app.Post("/api/device/:id/dash", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		u64, err := strconv.ParseUint(id, 10, 64)
+		if err != nil {
+			err = c.Status(404).Send([]byte("NOK"))
+			return err
+		}
+		device := device.GetByID(uint(u64))
+		addr := device.GenerateDash()
+		err = c.Status(200).Send([]byte(addr))
+		return err
+	})
 	app.Get("*", func(c *fiber.Ctx) error {
 		err := c.SendFile("web/public/index.html")
 		return err
@@ -61,6 +73,5 @@ func main() {
 	if !*devP{
 		startAsyncServices()
 	}
-	_ = device.GetOrCreate("MF", "000")
 	fmt.Println(app.Listen(":" + strconv.Itoa(conf.HTTP.Port)))
 }
