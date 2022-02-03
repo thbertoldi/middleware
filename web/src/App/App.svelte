@@ -24,6 +24,10 @@
  });
 </script>
 
+<svelte:head>
+    <title>IoT Middleware</title>
+</svelte:head>
+
 <html lang="en">
     <body class="bg-light">
     <div class="container-fluid">
