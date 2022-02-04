@@ -52,3 +52,10 @@ Start Golang Middleware:
 ```sh
 $ go run . --dev
 ```
+
+## Running the device simulator:
+
+```sh
+$ pip install -r tools/requirements.txt --user
+$ python3 tools/simulador.py --mf --tf --cm
+```

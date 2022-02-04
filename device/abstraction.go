@@ -19,6 +19,8 @@ type Device struct {
 	Type string `json:"type"`
 	Serial string `json:"serial"`
 	Sensors []Sensor`json:"sensors"`
+	StaticDash string `json:"staticDash"`
+	DynamicDash string `json:"dinamicDash"`
 }
 
 
