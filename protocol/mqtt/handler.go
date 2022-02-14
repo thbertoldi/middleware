@@ -29,7 +29,7 @@ var onSensorData paho.MessageHandler = func(client paho.Client, msg paho.Message
 	elem := strings.Split(topic, "/")
 	elem = elem[2:]
 	influxModel.PerformPost(strings.ToUpper(strings.Join(elem, " ")), data)
-	_ = device.GetOrCreate(elem[0], elem[1]) // TODO: Initialize a var
+	_ = device.GetOrCreate(elem[0], elem[1], elem[2]) // TODO: Initialize a var
 	// TODO: Check message payload to update sensors,
 	// dev.UpdateSensor("F", "my_sensor", 1)
 }

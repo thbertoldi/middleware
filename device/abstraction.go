@@ -16,7 +16,8 @@ type Sensor struct {
 
 type Device struct {
 	gorm.Model
-	Type string `json:"type"`
+	Build string `json:"build"`
+	DevModel string `json:"model"`
 	Serial string `json:"serial"`
 	Sensors []Sensor`json:"sensors"`
 	StaticDash string `json:"staticDash"`
@@ -61,9 +62,9 @@ func GetByID(id uint) Device {
 	return device
 }
 
-func GetOrCreate(model string, serial string) Device{
-	device := Device{Type: model, Serial: serial}
-	_ = db.FirstOrCreate(&device, "type = ? AND serial = ?", model, serial)
+func GetOrCreate(build string, devmodel string, serial string) Device{
+	device := Device{Build: build, DevModel: devmodel, Serial: serial}
+	_ = db.FirstOrCreate(&device, "build = ? AND devmodel = ? AND serial = ?", build, devmodel, serial)
 	cache[device.ID] = &device
 	return device
 }
