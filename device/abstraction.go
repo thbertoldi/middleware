@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"gorm.io/gorm"
 	"gorm.io/driver/sqlite"
-	"codigos.ufsc.br/g.manoel/pi_das_2021_2/protocol/http"
-	"fmt"
+	"middleware/protocol/http"
 )
 
 type Sensor struct {
@@ -35,7 +34,6 @@ func (s *Device) UpdateSensor(unit, name string, value float64) {
 }
 
 func (s *Device) GenerateDash() int {
-	fmt.Printf("Device: %s \n", s)
 	ret := grafana.CreateDashboard(s.Build, s.DevModel, s.Serial)
 	return ret
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"codigos.ufsc.br/g.manoel/pi_das_2021_2/config"
+	"middleware/config"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 )

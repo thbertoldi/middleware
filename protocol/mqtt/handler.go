@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"codigos.ufsc.br/g.manoel/pi_das_2021_2/device"
-	"codigos.ufsc.br/g.manoel/pi_das_2021_2/protocol/influx"
+	"middleware/device"
+	"middleware/protocol/influx"
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
 

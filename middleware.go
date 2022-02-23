@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"codigos.ufsc.br/g.manoel/pi_das_2021_2/config"
-	"codigos.ufsc.br/g.manoel/pi_das_2021_2/device"
-	"codigos.ufsc.br/g.manoel/pi_das_2021_2/protocol/mqtt"
+	"middleware/config"
+	"middleware/device"
+	"middleware/protocol/mqtt"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -62,8 +62,8 @@ func main() {
 			return err
 		}
 		device := device.GetByID(uint(u64))
-		addr := device.GenerateDash()
-		err = c.Status(200).Send([]byte(addr))
+		_ = device.GenerateDash()
+		err = c.SendStatus(200)
 		return err
 	})
 	app.Get("*", func(c *fiber.Ctx) error {

@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	"codigos.ufsc.br/g.manoel/pi_das_2021_2/config"
+	"middleware/config"
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
