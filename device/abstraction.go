@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/driver/sqlite"
 	"middleware/protocol/http"
+	"middleware/config"
 )
 
 type Sensor struct {
@@ -33,8 +34,8 @@ func (s *Device) UpdateSensor(unit, name string, value float64) {
 	db.Model(&sensor).Update("Value", value)
 }
 
-func (s *Device) GenerateDash() int {
-	ret := grafana.CreateDashboard(s.Build, s.DevModel, s.Serial)
+func (s *Device) GenerateDash(conf config.Internal) int {
+	ret := grafana.CreateDashboard(s.Build, s.DevModel, s.Serial, conf)
 	return ret
 }
 

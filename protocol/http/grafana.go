@@ -1,14 +1,12 @@
 package grafana
 
 import (
-	//"encoding/json"
 	"bytes"
 	"fmt"
-	//"io/ioutil"
 	"strings"
 	"net/http"
-	"os"
 	"time"
+	"middleware/config"
 )
 
 func postToApi(data string) int {
@@ -17,7 +15,8 @@ func postToApi(data string) int {
 	}
 	req, err := http.NewRequest("POST", "http://localhost:3000/api/dashboards/db", bytes.NewBuffer([]byte(data)))
 	if err != nil {
-		fmt.Errorf("Got error %s", err.Error())
+		fmt.Printf("Got error %s", err.Error())
+		return 400
 	}
 	req.Header.Add("Content-Type", `application/json`)
 	req.Header.Add("Authorization", `Bearer eyJrIjoiM01TUzVJdHAxRHMzTzkzdkVVNVc1WWRnaFhSV1NjUGwiLCJuIjoiZ3JhZmFuYV90b2tsZW4iLCJpZCI6MX0=`)
@@ -26,10 +25,16 @@ func postToApi(data string) int {
 	return resp.StatusCode
 }
 
-func CreateDashboard(build string, model string, serial string) int {
+func CreateDashboard(build string, model string, serial string, conf config.Internal) int {
 	fmt.Printf("### createDashboard: Device: %s // %s // %s \n", build, model, serial)
-	dat, _ := os.ReadFile(fmt.Sprintf("/home/adrianozdp/workspace/pi_das_2021_2/protocol/grafana/templates/%s.json", model))
-	content := string(dat)
+	var content string
+	if model == "tf" {
+		content = conf.Template.Tf
+	} else if model == "mf" {
+		content = conf.Template.Mf
+	} else if model == "cm" {
+		content = conf.Template.Cm
+	}
 	content = strings.Replace(content, "#DEVMODEL#", model, -1)
 	content = strings.Replace(content, "#DEVMODEL_UPPER#", strings.ToUpper(model), -1)
 	content = strings.Replace(content, "#SERIAL#", serial, -1)

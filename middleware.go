@@ -62,7 +62,7 @@ func main() {
 			return err
 		}
 		device := device.GetByID(uint(u64))
-		_ = device.GenerateDash()
+		_ = device.GenerateDash(conf)
 		err = c.SendStatus(200)
 		return err
 	})

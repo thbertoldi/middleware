@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -34,6 +35,14 @@ type HTTP struct {
 type Internal struct {
 	MQTT MQTT `json:"mqtt"`
 	HTTP HTTP `json:"http"`
+	Template Template `json:"template"`
+}
+
+// Template holds all template models
+type Template struct {
+	Cm string `json:"cm"`
+	Mf string `json:"mf"`
+	Tf string `json:"tf"`
 }
 
 var v1 = viper.New()
@@ -62,6 +71,19 @@ func LoadInternal() (config Internal, err error) {
 	}
 
 	err = v1.Unmarshal(&config)
+
+	if config.Template.Mf == "" {
+		mf, _ := os.ReadFile("protocol/grafana/templates/mf.json")
+		config.Template.Mf = string(mf)
+	}
+	if config.Template.Tf == "" {
+		tf, _ := os.ReadFile("protocol/grafana/templates/tf.json")
+		config.Template.Tf = string(tf)
+	}
+	if config.Template.Cm == "" {
+		cm, _ := os.ReadFile("protocol/grafana/templates/cm.json")
+		config.Template.Cm = string(cm)
+	}
 	return
 }
 

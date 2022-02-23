@@ -9,5 +9,10 @@
     "topic": [
       "dev/lmm/+/+/+"
     ]
+  },
+  "template": {
+    "cm": "",
+    "mf": "",
+    "tf": ""
   }
 }

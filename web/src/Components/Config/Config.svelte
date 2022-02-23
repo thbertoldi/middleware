@@ -49,6 +49,12 @@
         </div>
         <label class="col-sm-4 form-check-label" for="checkJoin">Permitir auto-cadastro de dispositivos</label>
     </div>
+    <label class="col-sm-6 col-form-label">Template Trifásico (TF)</label>
+    <textarea bind:value={appConfig.template.tf}></textarea>
+    <label class="col-sm-6 col-form-label">Template Monofásico (MF)</label>
+    <textarea bind:value={appConfig.template.mf}></textarea>
+    <label class="col-sm-6 col-form-label">Template Monóxido de Carbono (CM)</label>
+    <textarea bind:value={appConfig.template.cm}></textarea>
     <div class="row mb-3">
         <div class="col-sm-6">
             <button type="submit" class="btn btn-primary" on:click="{sendConfig}">Enviar</button>

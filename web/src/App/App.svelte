@@ -2,7 +2,7 @@
  import { onMount } from 'svelte';
  import Device from '../Components/Device/Device.svelte'
  import Config from '../Components/Config/Config.svelte'
- $: appConfig = {"http": {"port": 0}, "mqtt": {"host": "", "port": 0, "topic": [], "id": ""}};
+ $: appConfig = {"http": {"port": 0}, "mqtt": {"host": "", "port": 0, "topic": [], "id": ""}, "template": {"tf": "", "mf": "", "cm": ""}};
  $: allowJoin = true;
  $: deviceList = {};
  $: cfg = true;
