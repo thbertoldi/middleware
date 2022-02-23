@@ -27,8 +27,8 @@ func Get() Model {
 
 // PerformPost return influx client
 func (s Model) PerformPost(device string, data map[string]interface{}) {
-	fmt.Println(device)
-	fmt.Println(data)
+	fmt.Println("DEVICE: ", device)
+	fmt.Println("Data: ", data)
 	p := influxdb2.NewPoint("LMM",
 		map[string]string{"device": device},
 		data,

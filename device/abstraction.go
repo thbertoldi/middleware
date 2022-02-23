@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"gorm.io/gorm"
 	"gorm.io/driver/sqlite"
+	"codigos.ufsc.br/g.manoel/pi_das_2021_2/protocol/http"
+	"fmt"
 )
 
 type Sensor struct {
@@ -14,10 +16,11 @@ type Sensor struct {
 	DeviceID uint `json:"id"`
 }
 
+// TODO: Create Migrator
 type Device struct {
 	gorm.Model
 	Build string `json:"build"`
-	DevModel string `json:"model"`
+	DevModel string `json:"devmodel"`
 	Serial string `json:"serial"`
 	Sensors []Sensor`json:"sensors"`
 	StaticDash string `json:"staticDash"`
@@ -31,8 +34,10 @@ func (s *Device) UpdateSensor(unit, name string, value float64) {
 	db.Model(&sensor).Update("Value", value)
 }
 
-func (s *Device) GenerateDash() string {
-	return ""
+func (s *Device) GenerateDash() int {
+	fmt.Printf("Device: %s \n", s)
+	ret := grafana.CreateDashboard(s.Build, s.DevModel, s.Serial)
+	return ret
 }
 
 var db *gorm.DB = initModule()
@@ -64,7 +69,7 @@ func GetByID(id uint) Device {
 
 func GetOrCreate(build string, devmodel string, serial string) Device{
 	device := Device{Build: build, DevModel: devmodel, Serial: serial}
-	_ = db.FirstOrCreate(&device, "build = ? AND devmodel = ? AND serial = ?", build, devmodel, serial)
+	_ = db.FirstOrCreate(&device, "build = ? AND dev_model = ? AND serial = ?", build, devmodel, serial)
 	cache[device.ID] = &device
 	return device
 }

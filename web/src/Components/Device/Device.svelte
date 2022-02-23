@@ -13,7 +13,7 @@
     <hr>
     <div class="row mb-3">
         <label class="col-sm-2 col-form-label">ID: {id}</label>
-        <label class="col-sm-2 col-form-label">Modelo: {dev.type}</label>
+        <label class="col-sm-2 col-form-label">Modelo: {dev.devmodel}</label>
         <label class="col-sm-2 col-form-label">Serial: {dev.serial}</label>
         <label class="col-sm-4 col-form-label">Criado: {dev.CreatedAt}</label>
         <div class="col-sm-2">
