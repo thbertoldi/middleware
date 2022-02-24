@@ -1,11 +1,14 @@
 <script>
     export let deviceList;
+    export let apiResponse = "API Response";
     $: deviceObj = JSON.parse(deviceList)
     async function generateDash(id) {
         const res = await fetch(location.origin + "/api/device/" + id + "/dash", {
             method: 'POST',
             body: JSON.stringify({"generate": true})
-        })
+        });
+        const json = await res.json();
+        apiResponse = JSON.stringify(json);
     };
 </script>
 
@@ -21,3 +24,5 @@
         </div>
     </div>
 {/each}
+
+{apiResponse}

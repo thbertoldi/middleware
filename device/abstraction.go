@@ -34,9 +34,9 @@ func (s *Device) UpdateSensor(unit, name string, value float64) {
 	db.Model(&sensor).Update("Value", value)
 }
 
-func (s *Device) GenerateDash(conf config.Internal) int {
-	ret := grafana.CreateDashboard(s.Build, s.DevModel, s.Serial, conf)
-	return ret
+func (s *Device) GenerateDash(conf config.Internal) (code int, msg string) {
+	code, status := grafana.CreateDashboard(s.Build, s.DevModel, s.Serial, conf)
+	return code, status
 }
 
 var db *gorm.DB = initModule()

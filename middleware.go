@@ -62,8 +62,10 @@ func main() {
 			return err
 		}
 		device := device.GetByID(uint(u64))
-		_ = device.GenerateDash(conf)
-		err = c.SendStatus(200)
+		code, status := device.GenerateDash(conf)
+		//err = c.BodyParser(string(code)+"-"+status)
+		fmt.Println(string(code)+"-"+status)
+		err = c.Status(200).Send([]byte(status))
 		return err
 	})
 	app.Get("*", func(c *fiber.Ctx) error {
