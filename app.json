@@ -1,18 +1,23 @@
 {
-  "http": {
-    "port": 5000
-  },
-  "mqtt": {
-    "host": "150.162.14.51",
-    "id": "mqtt_iot_middleware",
-    "port": 1883,
-    "topic": [
-      "dev/lmm/+/+/+"
-    ]
-  },
-  "template": {
-    "cm": "",
-    "mf": "",
-    "tf": ""
-  }
+    "http": {
+        "port": 5000
+    },
+    "mqtt": {
+        "host": "150.162.14.51",
+        "id": "mqtt_iot_middleware",
+        "port": 1883,
+        "topic": [
+            "dev/lmm/+/+/+"
+        ]
+    },
+    "grafana": {
+        "host": "localhost",
+        "port": 3000,
+        "bearer": "eyJrIjoiZkJHVjM1UXBOU3JiYlA1RjBZbVdHbFlnZ1lwcERaWFciLCJuIjoibWlkZGxld2FyZSIsImlkIjoxfQ=="
+    },
+    "template": {
+        "cm": "",
+        "mf": "",
+        "tf": ""
+    }
 }

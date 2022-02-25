@@ -18,6 +18,13 @@ type Influx struct {
 	IFUrl    string `mapstructure:"URL"`
 }
 
+// Type Grafana handles a Grafana configuration
+type Grafana struct {
+	Host  string   `json:"host"`
+	Port  int      `json:"port"`
+	Bearer string `json:"bearer"`
+}
+
 // MQTT Holds MQTT Configuration
 type MQTT struct {
 	Host  string   `json:"host"`
@@ -35,6 +42,7 @@ type HTTP struct {
 type Internal struct {
 	MQTT MQTT `json:"mqtt"`
 	HTTP HTTP `json:"http"`
+	Grafana Grafana `json:"grafana"`
 	Template Template `json:"template"`
 }
 

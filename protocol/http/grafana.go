@@ -10,17 +10,17 @@ import (
 	"io"
 )
 
-func postToApi(data string) (code int, msg string) {
+func postToApi(data string, conf config.Internal) (code int, msg string) {
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
-	req, err := http.NewRequest("POST", "http://localhost:3000/api/dashboards/db", bytes.NewBuffer([]byte(data)))
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/api/dashboards/db", conf.Grafana.Host, conf.Grafana.Port), bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		fmt.Printf("Got error %s", err.Error())
 		return 400, err.Error()
 	}
 	req.Header.Add("Content-Type", `application/json`)
-	req.Header.Add("Authorization", `Bearer eyJrIjoiZkJHVjM1UXBOU3JiYlA1RjBZbVdHbFlnZ1lwcERaWFciLCJuIjoibWlkZGxld2FyZSIsImlkIjoxfQ==`)
+	req.Header.Add("Authorization", fmt.Sprintf(`Bearer %s`, conf.Grafana.Bearer))
 	resp, err := client.Do(req)
 	if err != nil {
 		panic("Failed to request Grafana API")
@@ -46,10 +46,6 @@ func CreateDashboard(build string, model string, serial string, conf config.Inte
 	content = strings.Replace(content, "#DEVMODEL_UPPER#", strings.ToUpper(model), -1)
 	content = strings.Replace(content, "#SERIAL#", serial, -1)
 	content = strings.Replace(content, "#BUILD#", build, -1)
-	code, status := postToApi(content)
+	code, status := postToApi(content, conf)
 	return code, status
-}
-
-func main() {
-	fmt.Printf("### Grafana main")
 }
