@@ -63,8 +63,7 @@ func main() {
 		}
 		device := device.GetByID(uint(u64))
 		code, status := device.GenerateDash(conf)
-		//err = c.BodyParser(string(code)+"-"+status)
-		fmt.Println(string(code)+"-"+status)
+		fmt.Println(strconv.Itoa(code)+"-"+status)
 		err = c.Status(200).Send([]byte(status))
 		return err
 	})
