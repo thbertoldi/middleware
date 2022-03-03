@@ -6,6 +6,9 @@
  $: allowJoin = true;
  $: deviceList = {};
  $: cfg = true;
+$: login = "";
+$: passwd = "";
+$: logged = false;
  onMount(async () => {
      fetch(location.origin + "/api/config")
          .then(response => response.json())
@@ -22,6 +25,11 @@
              return [];
          });
  });
+function onLogin() {
+    if (login == "admin" && passwd == "admin123") {
+        logged = true;
+    }
+};
 </script>
 
 <svelte:head>
@@ -32,6 +40,7 @@
     <body class="bg-light">
     <div class="container-fluid">
         <div class="row flex-nowrap">
+            {#if logged}
             <div class="col-auto px-0">
                 <div id="sidebar" class="collapse collapse-horizontal show border-end">
                     <div id="sidebar-nav" class="list-group border-0 rounded-0 text-sm-start min-vh-100">
@@ -55,6 +64,29 @@
                     </div>
                 </div>
             </main>
+            {:else}
+            <div class="container">
+            <form class="row mx-auto offset-lg-2">
+                <div class="row mb-3">
+                    <label for="log" class="col-sm-2 col-form-label">Login</label>
+                    <div class="col-sm-4">
+                        <input bind:value={login} type="text" class="form-control" id="log">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="pass" class="col-sm-2 col-form-label">Senha</label>
+                    <div class="col-sm-4">
+                        <input bind:value={passwd} type="text" class="form-control" id="pass">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-6">
+                        <button type="submit" class="btn btn-primary" on:click="{onLogin}">Enviar</button>
+                    </div>
+                </div>
+            </form>
+            </div>
+            {/if}
         </div>
     </div>
     </body>
