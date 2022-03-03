@@ -11,9 +11,9 @@
         ]
     },
     "grafana": {
-        "host": "localhost",
+        "host": "150.162.14.51",
         "port": 3000,
-        "bearer": "eyJrIjoiZkJHVjM1UXBOU3JiYlA1RjBZbVdHbFlnZ1lwcERaWFciLCJuIjoibWlkZGxld2FyZSIsImlkIjoxfQ=="
+        "bearer": "eyJrIjoiYTc3bWVJM1lDbVc3YzVmN3djMUtpelpudVJ4T05TSWkiLCJuIjoibWlkZGxld2FyZSIsImlkIjoxfQ=="
     },
     "template": {
         "cm": "",
