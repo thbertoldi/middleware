@@ -66,6 +66,7 @@ function onLogin() {
                     </main>
                 {:else}
                     <div class="container">
+                        <img src="./iot.png" class="img-fluid" alt="iot">
                         <form class="row mx-auto offset-lg-2">
                             <div class="row mb-3">
                                 <label for="log" class="col-sm-2 col-form-label">Login</label>
