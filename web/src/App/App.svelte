@@ -77,7 +77,7 @@ function onLogin() {
                             <div class="row mb-3">
                                 <label for="pass" class="col-sm-2 col-form-label">Senha</label>
                                 <div class="col-sm-4">
-                                    <input bind:value={passwd} type="text" class="form-control" id="pass">
+                                    <input bind:value={passwd} type="password" class="form-control" id="pass">
                                 </div>
                             </div>
                             <div class="row mb-3">
